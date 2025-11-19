@@ -1,0 +1,3128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corretor XML - Sistema Otimizado v6</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --secondary: #764ba2;
+            --success: #4caf50;
+            --danger: #f5576c;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --bg: #f7f7f9;
+            --card-bg: #ffffff;
+            --border: #e0e0e0;
+            --text: #4a4a4a;
+            --text-light: #666;
+            --shadow: 0 6px 16px rgba(0,0,0,0.08);
+            --radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); 
+            min-height: 100vh; 
+            padding: 20px;
+        }
+        
+        .container { 
+            max-width: 1800px; 
+            margin: 0 auto; 
+            background: var(--card-bg); 
+            border-radius: 12px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+            overflow: hidden; 
+        }
+        
+        .header { 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); 
+            color: white; 
+            padding: 30px; 
+            text-align: center; 
+        }
+        
+        .header h1 { font-size: 28px; margin-bottom: 10px; font-weight: 700; }
+        .header p { opacity: 0.9; font-size: 14px; }
+        
+        /* TABS */
+        .tabs { 
+            display: flex; 
+            background: #f8f9ff; 
+            border-bottom: 2px solid var(--border); 
+            overflow-x: auto;
+        }
+        
+        .tab { 
+            padding: 15px 30px; 
+            cursor: pointer; 
+            border: none; 
+            background: transparent; 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: var(--text-light); 
+            transition: var(--transition); 
+            position: relative;
+            white-space: nowrap;
+        }
+        
+        .tab.active { color: var(--primary); }
+        .tab.active::after { 
+            content: ''; 
+            position: absolute; 
+            bottom: -2px; 
+            left: 0; 
+            right: 0; 
+            height: 2px; 
+            background: var(--primary); 
+        }
+        .tab:hover { background: #f0f2ff; }
+        
+        .tab-content { display: none; padding: 30px; }
+        .tab-content.active { display: block; }
+        
+        /* UPLOAD AREA */
+        .upload-area { 
+            border: 3px dashed var(--primary); 
+            border-radius: var(--radius); 
+            padding: 40px; 
+            text-align: center; 
+            background: #f8f9ff; 
+            margin-bottom: 30px; 
+            transition: var(--transition); 
+            cursor: pointer; 
+        }
+        .upload-area:hover { border-color: var(--secondary); background: #f0f2ff; }
+        .upload-area.loaded { border-color: var(--success); background: #e8f5e9; }
+        
+        .upload-btn { 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); 
+            color: white; 
+            padding: 12px 30px; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            cursor: pointer; 
+            transition: transform 0.2s; 
+            margin: 5px;
+            font-weight: 600;
+        }
+        .upload-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .file-input { display: none; }
+        
+        /* STATS */
+        .stats { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 30px; 
+        }
+        
+        .stat-card { 
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); 
+            color: white; 
+            padding: 20px; 
+            border-radius: var(--radius); 
+            text-align: center;
+            transition: var(--transition);
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+        .stat-card h3 { font-size: 32px; margin-bottom: 5px; font-weight: 700; }
+        .stat-card p { font-size: 13px; opacity: 0.9; }
+        .stat-card.warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .stat-card.success { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .stat-card.info { background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%); }
+        .stat-card.alert { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
+        
+        /* BUTTONS */
+        .action-bar { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+            align-items: center; 
+        }
+        
+        .btn { 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 13px; 
+            font-weight: 600; 
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn:disabled { background: #ccc !important; cursor: not-allowed; transform: none; opacity: 0.6; }
+        
+        .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white; }
+        .btn-success { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .btn-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+        
+        .filter-section { display: flex; gap: 10px; margin-left: auto; align-items: center; }
+        .filter-btn { 
+            padding: 8px 16px; 
+            border: 2px solid var(--primary); 
+            background: white; 
+            color: var(--primary); 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            font-weight: 600; 
+            transition: var(--transition); 
+        }
+        .filter-btn.active { background: var(--primary); color: white; }
+        .filter-btn:hover { background: #f0f2ff; }
+        .filter-btn.active:hover { background: var(--primary-dark); }
+        
+        /* TABLE */
+        .table-container { 
+            overflow-x: auto; 
+            margin-bottom: 20px; 
+            max-height: 600px; 
+            overflow-y: auto; 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius);
+            background: white;
+        }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { 
+            background: var(--primary); 
+            color: white; 
+            padding: 12px 10px; 
+            text-align: left; 
+            font-weight: 600; 
+            font-size: 11px; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover { background: #f8f9ff; }
+        tr:last-child td { border-bottom: none; }
+        
+        /* STATUS BADGES */
+        .status-badge { 
+            display: inline-block; 
+            padding: 4px 10px; 
+            border-radius: 12px; 
+            font-size: 10px; 
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .status-badge.missing { background: #ffe0e0; color: #d32f2f; }
+        .status-badge.ok { background: #e0f7e0; color: #2e7d32; }
+        .status-badge.fixed { background: #e0f0ff; color: #1976d2; }
+        .status-badge.divergent { background: #fff3e0; color: #f57c00; }
+        .status-badge.unknown { background: #fce4ec; color: #c2185b; }
+        .status-badge.info { background: #fff3e0; color: #f57c00; }
+        
+        .btn-table { 
+            padding: 5px 10px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 11px; 
+            transition: var(--transition); 
+            margin: 2px;
+            font-weight: 600;
+        }
+        .btn-edit { background: var(--primary); color: white; }
+        .btn-edit:hover { background: var(--primary-dark); }
+        .btn-delete { background: var(--danger); color: white; }
+        .btn-delete:hover { background: #e04556; }
+        
+        /* MODAL */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.5); 
+            z-index: 1000; 
+            align-items: center; 
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal.active { display: flex; }
+        
+        .modal-content { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            max-width: 1400px; 
+            width: 95%; 
+            max-height: 90vh; 
+            overflow-y: auto; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modal-content h2 { color: var(--primary); margin-bottom: 20px; font-size: 24px; }
+        
+        /* ALERTS */
+        .alert-box { 
+            padding: 15px; 
+            margin-bottom: 20px; 
+            border-radius: 6px; 
+            border-left: 4px solid;
+            font-size: 13px;
+        }
+        .alert-warning { background: #fff3cd; border-color: var(--warning); color: #856404; }
+        .alert-danger { background: #f8d7da; border-color: var(--danger); color: #721c24; }
+        .alert-info { background: #d1ecf1; border-color: var(--info); color: #0c5460; }
+        .alert-success { background: #d4edda; border-color: var(--success); color: #155724; }
+        
+        .modal-info { 
+            background: #f8f9ff; 
+            padding: 15px; 
+            border-radius: 6px; 
+            margin-bottom: 20px; 
+            font-size: 13px;
+            border: 1px solid var(--border);
+        }
+        .modal-info p { margin-bottom: 8px; line-height: 1.6; }
+        .modal-info strong { color: var(--primary); }
+        
+        .suggestion-box { 
+            background: #e8f5e9; 
+            border-left: 4px solid var(--success); 
+            padding: 15px; 
+            margin-bottom: 20px; 
+            border-radius: 4px; 
+        }
+        .suggestion-box strong { color: #2e7d32; display: block; margin-bottom: 8px; }
+        
+        /* FORMS */
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 6px; 
+            font-weight: 600; 
+            font-size: 13px; 
+            color: #333; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 2px solid var(--border); 
+            border-radius: 6px; 
+            font-size: 14px; 
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { 
+            outline: none; 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2); 
+        }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .modal-buttons { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        .btn-modal { 
+            flex: 1; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: var(--transition);
+            min-width: 120px;
+        }
+        .btn-confirm { background: var(--primary); color: white; }
+        .btn-confirm:hover { background: var(--primary-dark); }
+        .btn-cancel { background: #f0f0f0; color: #333; }
+        .btn-cancel:hover { background: #e0e0e0; }
+        
+        /* UTILITIES */
+        .hidden { display: none !important; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .empty-state svg { margin-bottom: 20px; opacity: 0.5; }
+        
+        .code-preview { 
+            background: #f8f9ff; 
+            padding: 12px; 
+            border-radius: 6px; 
+            border: 2px solid var(--primary); 
+            margin-bottom: 15px; 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: var(--primary); 
+            text-align: center;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .search-box { 
+            padding: 10px; 
+            border: 2px solid var(--border); 
+            border-radius: 6px; 
+            font-size: 14px; 
+            min-width: 250px;
+            transition: var(--transition);
+        }
+        .search-box:focus { 
+            outline: none; 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+        
+        .guide-cell-border { 
+            border: 1px dashed var(--primary); 
+            border-radius: 4px; 
+            padding: 5px; 
+            background: #f8f9ff; 
+            vertical-align: middle; 
+            font-weight: 600; 
+            color: #333;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .guide-cell-border:hover { background: #e8f0ff; }
+        
+        .guide-checklist-item { 
+            margin-bottom: 5px; 
+            padding: 8px; 
+            border-bottom: 1px dashed #eee; 
+            transition: var(--transition); 
+            display: flex; 
+            align-items: center;
+            border-radius: 4px;
+        }
+        .guide-checklist-item:last-child { border-bottom: none; }
+        .guide-checklist-item:hover { background-color: #f0f2ff; }
+        
+        /* VISUAL EDITOR */
+        .object-block { 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            padding: 16px; 
+            margin-bottom: 16px; 
+            background-color: var(--card-bg);
+            transition: var(--transition);
+        }
+        .object-block:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        
+        .object-block > .object-title { 
+            font-size: 1.1rem; 
+            color: #333; 
+            margin-bottom: 16px; 
+            padding-bottom: 5px; 
+            border-bottom: 1px dashed var(--border); 
+            font-weight: 600; 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            user-select: none;
+        }
+        .object-title .icon { 
+            transition: transform 0.3s ease; 
+            font-size: 1.2rem; 
+            font-weight: bold; 
+            color: var(--primary); 
+        }
+        .object-block.collapsed .object-title .icon { transform: rotate(-90deg); }
+        
+        .collapsible-content { 
+            transition: max-height 0.4s ease-in-out, opacity 0.4s ease-in-out; 
+            overflow: hidden; 
+            max-height: 10000px; 
+        }
+        .object-block.collapsed .collapsible-content { max-height: 0; opacity: 0; }
+        
+        .list-item-card { 
+            border: 1px solid #c7d2e0; 
+            border-radius: var(--radius); 
+            padding: 16px; 
+            margin-bottom: 16px; 
+            background-color: #fafafa; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: var(--transition);
+        }
+        .list-item-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .list-item-card .item-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 16px; 
+            padding-bottom: 10px; 
+            border-bottom: 1px solid #c7d2e0; 
+        }
+        .list-item-card .item-title { 
+            font-size: 1rem; 
+            font-weight: 600; 
+            color: var(--secondary); 
+        }
+        
+        .btn-add { 
+            margin-top: 16px; 
+            background-color: var(--success); 
+            color: white; 
+            display: block; 
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .btn-add:hover { background-color: #45a049; transform: translateY(-2px); }
+        
+        #dynamic-form-container { 
+            max-height: 60vh; 
+            overflow-y: auto; 
+            padding-right: 10px; 
+        }
+        #dynamic-form-container::-webkit-scrollbar { width: 8px; }
+        #dynamic-form-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        #dynamic-form-container::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
+        #dynamic-form-container::-webkit-scrollbar-thumb:hover { background: var(--primary-dark); }
+        
+        /* GUIAS GRID */
+        .guias-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 20px; 
+        }
+        
+        .guia-card { 
+            background: #f8f9ff; 
+            border: 2px solid var(--border); 
+            border-radius: var(--radius); 
+            padding: 15px; 
+            cursor: pointer; 
+            transition: var(--transition);
+        }
+        .guia-card:hover { 
+            border-color: var(--primary); 
+            transform: translateY(-4px); 
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25); 
+        }
+        .guia-card h4 { color: var(--primary); margin-bottom: 10px; font-size: 16px; }
+        .guia-card p { font-size: 12px; margin: 5px 0; color: var(--text-light); line-height: 1.5; }
+        .guia-card strong { color: #333; }
+        
+        .navigation-buttons { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 20px; 
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        /* LOADING SPINNER */
+        .spinner {
+            border: 3px solid rgba(0,0,0,0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* TOOLTIP */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+        
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 5px;
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: 1fr; }
+            .action-bar { flex-direction: column; align-items: stretch; }
+            .filter-section { margin-left: 0; margin-top: 10px; }
+            .tabs { flex-wrap: wrap; }
+            .guias-grid { grid-template-columns: 1fr; }
+        }
+
+        /* PROGRESS BAR */
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Corretor XML - Sistema Otimizado v6</h1>
+            <p>Busca por guia | Correção automática | Edição visual completa | Edição em Massa | Base de dados local (IndexedDB)</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('xml')">📄 Processar XML</button>
+            <button class="tab" onclick="switchTab('database')">📊 Gerenciar Prestadores</button>
+            <button class="tab" onclick="switchTab('guias')">📝 Editar Guias</button>
+        </div>
+
+        <div id="xmlTab" class="tab-content active">
+            <div class="upload-area" id="xmlUploadArea">
+                <h3>📂 Upload do XML</h3>
+                <p style="margin: 10px 0;">Arraste o arquivo XML aqui ou clique para selecionar</p>
+                <button class="upload-btn" onclick="document.getElementById('xmlInput').click()">
+                    📁 Selecionar XML
+                </button>
+                <input type="file" id="xmlInput" class="file-input" accept=".xml" />
+                <div id="xmlFileInfo" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+            </div>
+
+            <div id="statsSection" class="hidden">
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3 id="totalClinics">0</h3>
+                        <p>Total de Clínicas</p>
+                    </div>
+                    <div class="stat-card warning">
+                        <h3 id="missingTags">0</h3>
+                        <p>Faltando cd_Prest</p>
+                    </div>
+                    <div class="stat-card info">
+                        <h3 id="divergentTags">0</h3>
+                        <p>Divergentes</p>
+                    </div>
+                    <div class="stat-card alert">
+                        <h3 id="unknownDoctors">0</h3>
+                        <p>Médicos Desconhecidos</p>
+                    </div>
+                    <div class="stat-card success">
+                        <h3 id="fixedTags">0</h3>
+                        <p>Totalmente Corrigidas</p>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-info" id="autoFixBtn" disabled onclick="autoCorrect()">
+                        ⚡ Correção Automática
+                    </button>
+                    <button class="btn btn-success" id="downloadBtn" disabled onclick="downloadXML()">
+                        💾 Baixar XML Corrigido
+                    </button>
+                    <button class="btn btn-danger" id="pdfBtn" disabled onclick="generatePDF()">
+                        📄 Gerar Relatório PDF
+                    </button>
+                    
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="guiaSearchInput" class="search-box" placeholder="🔍 Nº da Guia" style="width: 180px;">
+                        <button class="btn btn-primary" onclick="filterByGuia()">🔎 Buscar</button>
+                        <button class="btn" onclick="clearGuiaFilter()" style="background: #e0e0e0; color: #333;">✖ Limpar</button>
+                    </div>
+                    
+                    <div class="filter-section">
+                        <span style="font-size: 12px; color: #666;">Filtrar:</span>
+                        <button class="filter-btn active" onclick="filterTable('all')">Todos</button>
+                        <button class="filter-btn" onclick="filterTable('errors')">Apenas Erros</button>
+                        <button class="filter-btn" onclick="filterTable('unknown')">Desconhecidos</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tableSection" class="hidden">
+                <h3 style="margin-bottom: 15px; color: var(--primary);">📋 Clínicas Encontradas</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Clínica</th>
+                                <th>CNPJ/CPF</th>
+                                <th>CNES</th>
+                                <th>Médico Executante</th>
+                                <th>Cód. Médico</th>
+                                <th>Cód. Clínica</th>
+                                <th>Guias (Corrigidas/Total)</th>
+                                <th>Números das Guias</th>
+                                <th>Status</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clinicsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="emptyState" class="empty-state">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                </svg>
+                <h3>Nenhum arquivo carregado</h3>
+                <p>Faça upload do XML para processar</p>
+            </div>
+        </div>
+
+        <div id="databaseTab" class="tab-content">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+                <button class="btn btn-primary" onclick="openAddModal()">➕ Adicionar Prestador</button>
+                <button class="btn btn-success" onclick="document.getElementById('importInput').click()">📥 Importar Excel/CSV</button>
+                <button class="btn btn-danger" onclick="exportDatabase()">📤 Exportar Excel</button>
+                <button class="btn btn-info" onclick="clearDatabase()">🗑️ Limpar Base</button>
+                <input type="file" id="importInput" class="file-input" accept=".csv,.xlsx,.xls" />
+                <input type="text" class="search-box" id="searchInput" placeholder="🔍 Buscar..." onkeyup="filterDatabase()">
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código Médico</th>
+                            <th>Nome do Médico</th>
+                            <th>Especialidade</th>
+                            <th>Código Clínica</th>
+                            <th>Nome da Clínica</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="databaseTable"></tbody>
+                </table>
+            </div>
+
+            <div id="emptyDatabase" class="empty-state hidden">
+                <h3>Nenhum prestador cadastrado</h3>
+                <p>Adicione prestadores manualmente ou importe uma planilha</p>
+            </div>
+        </div>
+
+        <div id="guiasTab" class="tab-content">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+                <input type="text" class="search-box" id="guiaNumeroInput" placeholder="🔍 Digite o Nº da Guia..." list="guiaSuggestions" style="width: 300px;">
+                <datalist id="guiaSuggestions"></datalist>
+                <button class="btn btn-primary" onclick="searchGuiaInTab()">🔎 Buscar</button>
+                <button class="btn btn-info" onclick="openBulkEditModal()">⚡ Edição em Massa</button>
+                <button class="btn btn-success" onclick="exportGuiasToExcel()">📊 Exportar Todas (Excel)</button>
+            </div>
+
+            <div id="guiasGridSection" class="hidden">
+                <h3 style="margin-bottom: 15px; color: var(--primary);">📋 Todas as Guias do XML</h3>
+                <div class="guias-grid" id="guiasGrid"></div>
+            </div>
+
+            <div id="guiaEmptyState" class="empty-state">
+                <h3>Nenhum XML carregado</h3>
+                <p>Carregue um XML na aba Processar XML para buscar e editar guias</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAIS -->
+    <div class="modal" id="modalFix">
+        <div class="modal-content">
+            <h2 id="modalTitle">Corrigir Código da Clínica</h2>
+            <div id="unknownAlert" class="alert-box alert-danger hidden">
+                <strong>⚠️ Médico Não Cadastrado</strong>
+                <p>Este médico não está na base de dados.</p>
+            </div>
+            <div class="alert-box alert-warning">
+                <strong>ℹ️ Informação:</strong>
+                <p>Você está editando o código da <strong>CLÍNICA (PJ)</strong>. O código do <strong>MÉDICO (PF)</strong> não será alterado.</p>
+            </div>
+            <div class="modal-info">
+                <p><strong>🏥 Clínica:</strong> <span id="modalClinicName"></span></p>
+                <p><strong>📋 CNPJ/CPF:</strong> <span id="modalClinicCNPJ"></span></p>
+                <p><strong>🏢 CNES:</strong> <span id="modalClinicCNES"></span></p>
+                <p><strong>👨‍⚕️ Médico:</strong> <span id="modalDoctorName"></span></p>
+                <p><strong>🔢 Cód. Médico:</strong> <span id="modalDoctorCode"></span></p>
+                <p><strong>📊 Guias:</strong> <span id="modalGuides"></span></p>
+                <p id="modalOriginalCode" style="display: none;">
+                    <strong>🔄 Código Anterior:</strong> <span id="modalPreviousCode" style="color: var(--danger);"></span>
+                </p>
+            </div>
+            <div id="suggestionBox" class="suggestion-box hidden">
+                <strong>💡 Sugestão Automática:</strong>
+                <p id="suggestionText"></p>
+            </div>
+            <div class="code-preview" id="codePreview">Código: -</div>
+            <div class="form-group">
+                <label>🔧 Digite o Código da Clínica:</label>
+                <input type="text" id="clinicCodeInput" placeholder="Ex: 904302" oninput="updateCodePreview(this.value)">
+            </div>
+            <div class="form-group" id="guideSelectionGroup">
+                <label>Selecione as Guias para Corrigir:</label>
+                <div id="guidesChecklist" style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #fff;"></div>
+                <div style="margin-top: 10px; display: flex; gap: 10px; font-size: 11px;">
+                    <button class="btn" style="background: #e0f0ff; color: #1976d2; padding: 6px 12px;" onclick="checkAllGuides(true)">Marcar Pendentes</button>
+                    <button class="btn" style="background: #ffe0e0; color: #d32f2f; padding: 6px 12px;" onclick="checkAllGuides(false)">Desmarcar Todos</button>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-modal btn-cancel" onclick="closeModal('modalFix')">Cancelar</button>
+                <button class="btn-modal btn-confirm" onclick="confirmFix()">✓ Confirmar Correção</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalDatabase">
+        <div class="modal-content" style="max-width: 800px;">
+            <h2 id="dbModalTitle">Adicionar Prestador</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Código do Médico (COD_PES):</label>
+                    <input type="text" id="dbCodPes" required>
+                </div>
+                <div class="form-group">
+                    <label>Código da Clínica (COD_C):</label>
+                    <input type="text" id="dbCodClinica" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Nome do Médico:</label>
+                <input type="text" id="dbNome" required>
+            </div>
+            <div class="form-group">
+                <label>Especialidade:</label>
+                <input type="text" id="dbEspecialidade">
+            </div>
+            <div class="form-group">
+                <label>Nome da Clínica:</label>
+                <input type="text" id="dbClinica" required>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-modal btn-cancel" onclick="closeModal('modalDatabase')">Cancelar</button>
+                <button class="btn-modal btn-confirm" onclick="saveToDatabase()">✓ Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalUnknown">
+        <div class="modal-content">
+            <h2>⚠️ Médicos Não Cadastrados Encontrados</h2>
+            <div class="alert-box alert-info">
+                <p>Os seguintes médicos não estão na base de dados.</p>
+            </div>
+            <div id="unknownList" style="max-height: 400px; overflow-y: auto;"></div>
+            <div class="modal-buttons">
+                <button class="btn-modal btn-cancel" onclick="closeModal('modalUnknown')">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalDownloadOptions">
+        <div class="modal-content" style="max-width: 500px;">
+            <h2>Opções de Download do XML</h2>
+            <div class="alert-box alert-info">
+                <strong>Selecione o formato de saída do XML:</strong>
+                <p>O formato "Sem Indentação" é legível (uma tag por linha) e recomendado. O "Com Indentação" é ideal para conferência.</p>
+            </div>
+            <div class="modal-buttons" style="flex-direction: column;">
+                <button class="btn-modal btn-primary" onclick="performDownload(true)">
+                    📝 Baixar com Indentação (Legível)
+                </button>
+                <button class="btn-modal btn-confirm" onclick="performDownload(false)">
+                    📋 Baixar SEM Indentação (Compacto)
+                </button>
+                <button class="btn-modal btn-cancel" onclick="closeModal('modalDownloadOptions')">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalBulkEdit">
+        <div class="modal-content" style="max-width: 1200px;">
+            <h2>⚡ Edição em Massa de Guias</h2>
+            
+            <div class="alert-box alert-info">
+                <strong>ℹ️ Como funciona:</strong>
+                <p>1. O sistema analisa todas as guias e identifica campos comuns</p>
+                <p>2. Você pode substituir valores específicos por novos valores</p>
+                <p>3. As alterações serão aplicadas em todas as guias que atendam aos critérios</p>
+            </div>
+
+            <div id="bulkAnalysisSection">
+                <h3 style="color: var(--primary); margin-bottom: 15px;">📊 Análise Automática dos Campos</h3>
+                <button class="btn btn-primary" onclick="analyzeBulkFields()" style="margin-bottom: 20px;">
+                    🔍 Analisar Campos Comuns
+                </button>
+                <div id="bulkAnalysisResults"></div>
+            </div>
+
+            <hr style="margin: 30px 0; border-color: var(--border);">
+
+            <h3 style="color: var(--primary); margin-bottom: 15px;">✏️ Definir Correção Manual</h3>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Campo a Corrigir:</label>
+                    <select id="bulkFieldSelect" onchange="updateBulkFieldInfo()">
+                        <option value="">-- Selecione um campo --</option>
+                        <optgroup label="Dados do Prestador">
+                            <option value="contratado.cnes">CNES do Prestador</option>
+                            <option value="contratado.cnpj">CNPJ do Prestador</option>
+                            <option value="contratado.cpf">CPF do Prestador</option>
+                            <option value="contratado.nome">Nome do Prestador</option>
+                            <option value="contratado.codPrest">Código do Prestador (cd_Prest)</option>
+                        </optgroup>
+                        <optgroup label="Dados do Médico">
+                            <option value="medico.nome">Nome do Médico</option>
+                            <option value="medico.conselho">Conselho do Médico</option>
+                            <option value="medico.numeroConselho">Número do Conselho</option>
+                            <option value="medico.uf">UF do Conselho</option>
+                            <option value="medico.cbo">CBO</option>
+                        </optgroup>
+                        <optgroup label="Dados da Guia">
+                            <option value="guia.dataAtendimento">Data de Atendimento</option>
+                            <option value="guia.indicacaoAcidente">Indicação de Acidente</option>
+                            <option value="guia.tipoConsulta">Tipo de Consulta</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Operação:</label>
+                    <select id="bulkOperationType" onchange="updateBulkOperationUI()">
+                        <option value="replace">Substituir Valor Específico</option>
+                        <option value="replaceAll">Substituir em Todas as Guias</option>
+                        <option value="replaceEmpty">Preencher Apenas Vazios</option>
+                        <option value="addPrefix">Adicionar Prefixo</option>
+                        <option value="addSuffix">Adicionar Sufixo</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="bulkFieldInfo" class="modal-info hidden">
+                <p><strong>📌 Valores encontrados neste campo:</strong></p>
+                <div id="bulkFieldValues" style="max-height: 150px; overflow-y: auto;"></div>
+            </div>
+
+            <div class="form-row" id="bulkReplaceInputs">
+                <div class="form-group">
+                    <label>Valor Atual (encontrar):</label>
+                    <input type="text" id="bulkOldValue" placeholder="Ex: 12345">
+                    <small style="color: var(--text-light); font-size: 11px;">Deixe vazio para aplicar em todos</small>
+                </div>
+                <div class="form-group">
+                    <label>Novo Valor (substituir por):</label>
+                    <input type="text" id="bulkNewValue" placeholder="Ex: 67890">
+                </div>
+            </div>
+
+            <div id="bulkPreviewResults" class="hidden" style="margin-top: 20px;">
+                <h3 style="color: var(--primary); margin-bottom: 10px;">👁️ Preview das Alterações</h3>
+                <div id="bulkPreviewContent" style="max-height: 300px; overflow-y: auto; background: #f8f9ff; padding: 15px; border-radius: 6px; border: 2px solid var(--primary);"></div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-modal btn-cancel" onclick="closeModal('modalBulkEdit')">Cancelar</button>
+                <button class="btn-modal btn-primary" onclick="executeBulkEdit(true)">👁️ Visualizar</button>
+                <button class="btn-modal btn-confirm" onclick="executeBulkEdit(false)" id="bulkApplyBtn" disabled>✓ Aplicar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modalGuiaEdit">
+        <div class="modal-content" style="max-width: 1400px;">
+            <h2>✏️ Editor Visual Completo - Guia <span id="guiaNumeroTitle"></span></h2>
+            
+            <div id="dynamic-form-container">
+                <div class="spinner"></div>
+                <p style="color: #888; text-align: center; padding: 20px;">Carregando estrutura da guia...</p>
+            </div>
+
+            <div class="navigation-buttons">
+                <button class="btn btn-primary" onclick="navigateGuia('first')">⏮️ Primeira</button>
+                <button class="btn btn-primary" onclick="navigateGuia('previous')">⬅️ Anterior</button>
+                <button class="btn btn-primary" onclick="navigateGuia('next')">➡️ Próxima</button>
+                <button class="btn btn-primary" onclick="navigateGuia('last')">⏭️ Última</button>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-modal btn-cancel" onclick="closeModal('modalGuiaEdit')">Cancelar</button>
+                <button class="btn-modal btn-confirm" onclick="saveGuiaChangesVisual()">✓ Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // VARIÁVEIS GLOBAIS
+        // ========================================
+        const DB_NAME = 'UnimedXMLCorrectorDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'prestadores';
+        
+        let db = null;
+        let xmlDoc = null;
+        let clinicsData = [];
+        let referenceDatabase = [];
+        let currentClinicIndex = -1;
+        let currentFilter = 'all';
+        let xmlFileName = '';
+        let editingIndex = -1;
+        let allGuiasNumbers = [];
+        let currentGuiaElement = null;
+        let currentGuiaIndex = -1;
+        let allGuiasElements = [];
+
+        // ========================================
+        // MÓDULO INDEXEDDB
+        // ========================================
+        const DBManager = {
+            open() {
+                return new Promise((resolve, reject) => {
+                    if (!window.indexedDB) {
+                        return reject('Seu navegador não suporta IndexedDB.');
+                    }
+                    
+                    const request = indexedDB.open(DB_NAME, DB_VERSION);
+                    
+                    request.onerror = () => reject('Erro ao abrir o IndexedDB.');
+                    
+                    request.onupgradeneeded = (e) => {
+                        db = e.target.result;
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            const objectStore = db.createObjectStore(STORE_NAME, { 
+                                keyPath: 'id', 
+                                autoIncrement: true 
+                            });
+                            objectStore.createIndex('codPes', 'codPes', { unique: false });
+                            objectStore.createIndex('codClinica', 'codClinica', { unique: false });
+                        }
+                    };
+                    
+                    request.onsuccess = (e) => {
+                        db = e.target.result;
+                        resolve(db);
+                    };
+                });
+            },
+
+            transaction(mode, callback) {
+                if (!db) {
+                    console.error('Banco de dados não inicializado.');
+                    return Promise.reject('DB não inicializado');
+                }
+                const transaction = db.transaction([STORE_NAME], mode);
+                return callback(transaction.objectStore(STORE_NAME), transaction);
+            },
+
+            getAll() {
+                return new Promise((resolve, reject) => {
+                    this.transaction('readonly', (store) => {
+                        const request = store.getAll();
+                        request.onsuccess = () => resolve(request.result);
+                        request.onerror = () => reject('Erro ao buscar dados.');
+                    });
+                });
+            },
+
+            add(prestador) {
+                return new Promise((resolve, reject) => {
+                    this.transaction('readwrite', (store, tx) => {
+                        const request = store.add(prestador);
+                        request.onsuccess = () => resolve(request.result);
+                        request.onerror = () => reject('Erro ao adicionar prestador.');
+                        tx.oncomplete = () => loadDatabase();
+                    });
+                });
+            },
+
+            update(prestador) {
+                return new Promise((resolve, reject) => {
+                    this.transaction('readwrite', (store, tx) => {
+                        const request = store.put(prestador);
+                        request.onsuccess = () => resolve();
+                        request.onerror = () => reject('Erro ao atualizar prestador.');
+                        tx.oncomplete = () => loadDatabase();
+                    });
+                });
+            },
+
+            delete(id) {
+                return new Promise((resolve, reject) => {
+                    this.transaction('readwrite', (store, tx) => {
+                        const request = store.delete(id);
+                        request.onsuccess = () => resolve();
+                        request.onerror = () => reject('Erro ao excluir prestador.');
+                        tx.oncomplete = () => loadDatabase();
+                    });
+                });
+            },
+
+            clear() {
+                return new Promise((resolve, reject) => {
+                    this.transaction('readwrite', (store, tx) => {
+                        const request = store.clear();
+                        request.onsuccess = () => resolve();
+                        request.onerror = () => reject('Erro ao limpar base de dados.');
+                        tx.oncomplete = () => loadDatabase();
+                    });
+                });
+            }
+        };
+
+        // ========================================
+        // MÓDULO EDITOR VISUAL
+        // ========================================
+        const VisualEditor = (function() {
+            let currentGuiaData = {};
+            let currentGuiaXmlElement = null;
+
+            function xmlToJson(xmlElement) {
+                const obj = {};
+                
+                if (xmlElement.nodeType === 1) {
+                    const tagName = xmlElement.tagName.replace(/^ptu:/, '');
+                    
+                    // Atributos
+                    if (xmlElement.attributes.length > 0) {
+                        obj['@attributes'] = {};
+                        for (let i = 0; i < xmlElement.attributes.length; i++) {
+                            const attr = xmlElement.attributes[i];
+                            obj['@attributes'][attr.nodeName] = attr.nodeValue;
+                        }
+                    }
+                    
+                    const children = Array.from(xmlElement.childNodes);
+                    const textContent = children
+                        .filter(n => n.nodeType === 3)
+                        .map(n => n.nodeValue.trim())
+                        .filter(t => t)
+                        .join('');
+                    
+                    const elementChildren = children.filter(n => n.nodeType === 1);
+                    
+                    if (elementChildren.length === 0 && textContent) {
+                        return textContent;
+                    } else if (elementChildren.length > 0) {
+                        elementChildren.forEach(child => {
+                            const childTagName = child.tagName.replace(/^ptu:/, '');
+                            const childValue = xmlToJson(child);
+                            
+                            if (obj[childTagName]) {
+                                if (!Array.isArray(obj[childTagName])) {
+                                    obj[childTagName] = [obj[childTagName]];
+                                }
+                                obj[childTagName].push(childValue);
+                            } else {
+                                obj[childTagName] = childValue;
+                            }
+                        });
+                    }
+                }
+                
+                return obj;
+            }
+
+            function updateData(path, value) {
+                const parts = path.split('.');
+                let current = currentGuiaData;
+                
+                for (let i = 0; i < parts.length - 1; i++) {
+                    const part = parts[i];
+                    const match = part.match(/([^\[]+)\[(\d+)\]/);
+                    
+                    if (match) {
+                        const arrayKey = match[1];
+                        const index = parseInt(match[2], 10);
+                        current = current[arrayKey][index];
+                    } else {
+                        current = current[part];
+                    }
+                }
+                
+                const lastPart = parts[parts.length - 1];
+                const match = lastPart.match(/([^\[]+)\[(\d+)\]/);
+                
+                if (match) {
+                    const arrayKey = match[1];
+                    const index = parseInt(match[2], 10);
+                    current[arrayKey][index] = value;
+                } else {
+                    current[lastPart] = value;
+                }
+            }
+
+            function determineType(value) {
+                if (Array.isArray(value)) return 'array';
+                if (typeof value === 'object' && value !== null) return 'object';
+                if (typeof value === 'boolean') return 'boolean';
+                if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) return 'date';
+                if (typeof value === 'string' && value.match(/^\d{8}$/)) return 'date_tiss';
+                if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)) && value.trim() !== '')) return 'number';
+                return 'string';
+            }
+
+            function createSimpleField(key, value, path) {
+                const type = determineType(value);
+                let inputHtml = '';
+                let inputType = 'text';
+
+                switch (type) {
+                    case 'number':
+                        inputType = 'number';
+                        break;
+                    case 'date':
+                        inputType = 'date';
+                        break;
+                    case 'date_tiss':
+                        const displayValue = value.length === 8 
+                            ? `${value.substring(0,4)}-${value.substring(4,6)}-${value.substring(6,8)}`
+                            : value;
+                        inputHtml = `<input type="date" id="${path}" value="${displayValue}" onchange="VisualEditor.handleFieldChange(this, '${path}', 'date_tiss')">`;
+                        break;
+                    case 'boolean':
+                        const boolValue = value === true || value === 'S' || value === '1';
+                        inputHtml = `
+                            <select id="${path}" onchange="VisualEditor.handleFieldChange(this, '${path}', 'boolean')">
+                                <option value="true" ${boolValue ? 'selected' : ''}>Sim</option>
+                                <option value="false" ${!boolValue ? 'selected' : ''}>Não</option>
+                            </select>
+                        `;
+                        break;
+                    case 'string':
+                        if (key.toLowerCase().includes('observa') || key.toLowerCase().includes('descric')) {
+                            inputHtml = `<textarea id="${path}" rows="3" onchange="VisualEditor.handleFieldChange(this, '${path}', 'string')">${value}</textarea>`;
+                        }
+                        break;
+                }
+                
+                if (!inputHtml) {
+                    inputHtml = `<input type="${inputType}" id="${path}" value="${value}" onchange="VisualEditor.handleFieldChange(this, '${path}', '${type}')" ${inputType === 'number' ? 'step="any"' : ''}>`;
+                }
+
+                return `
+                    <div class="form-group">
+                        <label for="${path}">${key}</label>
+                        ${inputHtml}
+                    </div>
+                `;
+            }
+
+            function createField(data, path, isListItem = false) {
+                let html = '';
+                const dataType = determineType(data);
+
+                if (dataType === 'object') {
+                    const fieldKey = path.split('.').pop();
+                    const title = fieldKey || 'Guia';
+
+                    let contentHtml = '';
+                    for (const key in data) {
+                        if (Object.prototype.hasOwnProperty.call(data, key) && key !== '@attributes') {
+                            contentHtml += createField(data[key], `${path}.${key}`);
+                        }
+                    }
+
+                    html = `
+                        <div class="object-block" id="block-${path.replace(/[\.\[\]]/g, '-')}">
+                            <div class="object-title" onclick="VisualEditor.toggleCollapse('block-${path.replace(/[\.\[\]]/g, '-')}')">
+                                ${title}
+                                <span class="icon">▼</span>
+                            </div>
+                            <div class="collapsible-content">
+                                ${contentHtml}
+                            </div>
+                        </div>
+                    `;
+
+                } else if (dataType === 'array') {
+                    const arrayKey = path.split('.').pop();
+                    
+                    const listItemsHtml = data.map((item, index) => {
+                        const itemPath = `${path}[${index}]`;
+                        const itemTitle = `Item ${index + 1}`;
+
+                        let itemContentHtml = '';
+                        if (typeof item === 'object') {
+                            for (const key in item) {
+                                if (Object.prototype.hasOwnProperty.call(item, key) && key !== '@attributes') {
+                                    itemContentHtml += createField(item[key], `${itemPath}.${key}`, true);
+                                }
+                            }
+                        } else {
+                            itemContentHtml = createSimpleField('valor', item, itemPath);
+                        }
+                        
+                        return `
+                            <div class="list-item-card" id="card-${itemPath.replace(/[\.\[\]]/g, '-')}">
+                                <div class="item-header">
+                                    <span class="item-title">${itemTitle}</span>
+                                    <button class="btn btn-danger" onclick="VisualEditor.removeItem('${path}', ${index})">🗑️ Remover</button>
+                                </div>
+                                <div class="list-item-content">
+                                    ${itemContentHtml}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    html = `
+                        <div class="list-container" style="margin-top: 20px;">
+                            <div class="object-title" style="border: none; margin-bottom: 0; font-size: 1.2rem; color: #333;">Lista: ${arrayKey}</div>
+                            <div id="list-items-${path.replace(/\./g, '-')}" style="padding: 10px 0;">
+                                ${listItemsHtml}
+                            </div>
+                            <button class="btn btn-add" onclick="VisualEditor.addItem('${path}')">➕ Adicionar Item</button>
+                            <hr style="margin-top: 16px; border-color: #eee;">
+                        </div>
+                    `;
+                    
+                } else {
+                    html = createSimpleField(path.split('.').pop(), data, path);
+                }
+
+                return html;
+            }
+
+            function renderForm(jsonData, xmlElement) {
+                currentGuiaData = jsonData;
+                currentGuiaXmlElement = xmlElement;
+                
+                const container = document.getElementById('dynamic-form-container');
+                if (!container) return;
+
+                const rootKey = Object.keys(jsonData)[0];
+                const formHtml = createField(jsonData[rootKey], rootKey);
+                
+                container.innerHTML = formHtml;
+
+                // Colapsar todos exceto o root
+                document.querySelectorAll('.object-block').forEach(block => {
+                    block.classList.add('collapsed');
+                });
+                const rootBlock = document.getElementById(`block-${rootKey}`);
+                if (rootBlock) rootBlock.classList.remove('collapsed');
+            }
+
+            function handleFieldChange(element, path, type) {
+                let value;
+                
+                if (type === 'boolean') {
+                    value = element.value === 'true';
+                } else if (type === 'date_tiss') {
+                    const dateValue = element.value;
+                    value = dateValue ? dateValue.replace(/-/g, '') : '';
+                } else if (type === 'number') {
+                    value = Number(element.value);
+                    if (isNaN(value)) {
+                        element.style.borderColor = '#f44336';
+                        return;
+                    } else {
+                        element.style.borderColor = '';
+                    }
+                } else {
+                    value = element.value;
+                }
+
+                updateData(path, value);
+            }
+
+            function toggleCollapse(blockId) {
+                const block = document.getElementById(blockId);
+                if (block) {
+                    block.classList.toggle('collapsed');
+                }
+            }
+
+            function addItem(path) {
+                const parts = path.split('.');
+                let arrayRef = currentGuiaData;
+                for (const part of parts) {
+                    const match = part.match(/([^\[]+)\[(\d+)\]/);
+                    if (match) {
+                        const arrayKey = match[1];
+                        const index = parseInt(match[2], 10);
+                        arrayRef = arrayRef[arrayKey][index];
+                    } else {
+                        arrayRef = arrayRef[part];
+                    }
+                }
+                
+                if (arrayRef && Array.isArray(arrayRef)) {
+                    const template = arrayRef.length > 0 ? JSON.parse(JSON.stringify(arrayRef[0])) : {};
+                    arrayRef.push(template);
+                    
+                    const rootKey = Object.keys(currentGuiaData)[0];
+                    renderForm(currentGuiaData, currentGuiaXmlElement);
+                }
+            }
+
+            function removeItem(path, index) {
+                if (!confirm('Confirmar remoção do item?')) return;
+                
+                const parts = path.split('.');
+                let arrayRef = currentGuiaData;
+
+                for (const part of parts) {
+                    const match = part.match(/([^\[]+)\[(\d+)\]/);
+                    if (match) {
+                        const arrayKey = match[1];
+                        const idx = parseInt(match[2], 10);
+                        arrayRef = arrayRef[arrayKey][idx];
+                    } else {
+                        arrayRef = arrayRef[part];
+                    }
+                }
+                
+                if (arrayRef && Array.isArray(arrayRef)) {
+                    arrayRef.splice(index, 1);
+                    
+                    const rootKey = Object.keys(currentGuiaData)[0];
+                    renderForm(currentGuiaData, currentGuiaXmlElement);
+                }
+            }
+
+            function jsonToXmlElement(json, doc, parentNamespace, parentPrefix) {
+                const rootKey = Object.keys(json)[0];
+                const rootData = json[rootKey];
+                
+                function buildElement(data, tagName) {
+                    const nsURI = parentNamespace || '';
+                    const prefix = parentPrefix || 'ptu';
+                    const fullTagName = nsURI ? `${prefix}:${tagName}` : tagName;
+                    
+                    const element = nsURI 
+                        ? doc.createElementNS(nsURI, fullTagName)
+                        : doc.createElement(tagName);
+                    
+                    if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+                        for (const key in data) {
+                            if (key === '@attributes') continue;
+                            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                                const childValue = data[key];
+                                
+                                if (Array.isArray(childValue)) {
+                                    childValue.forEach(item => {
+                                        element.appendChild(buildElement(item, key));
+                                    });
+                                } else if (typeof childValue === 'object' && childValue !== null) {
+                                    element.appendChild(buildElement(childValue, key));
+                                } else {
+                                    const childEl = nsURI
+                                        ? doc.createElementNS(nsURI, `${prefix}:${key}`)
+                                        : doc.createElement(key);
+                                    
+                                    let textValue = childValue;
+                                    if (typeof childValue === 'boolean') {
+                                        textValue = childValue ? 'S' : 'N';
+                                    }
+                                    childEl.textContent = String(textValue);
+                                    element.appendChild(childEl);
+                                }
+                            }
+                        }
+                    } else if (typeof data === 'string' || typeof data === 'number' || typeof data === 'boolean') {
+                        let textValue = data;
+                        if (typeof data === 'boolean') {
+                            textValue = data ? 'S' : 'N';
+                        }
+                        element.textContent = String(textValue);
+                    }
+                    
+                    return element;
+                }
+                
+                return buildElement(rootData, rootKey);
+            }
+
+            function saveToXml() {
+                if (!currentGuiaXmlElement || !currentGuiaData) {
+                    alert('Erro: Dados da guia não carregados.');
+                    return false;
+                }
+
+                try {
+                    const nsURI = currentGuiaXmlElement.namespaceURI || currentGuiaXmlElement.lookupNamespaceURI('ptu') || '';
+                    const prefix = currentGuiaXmlElement.prefix || 'ptu';
+                    
+                    const newElement = jsonToXmlElement(currentGuiaData, xmlDoc, nsURI, prefix);
+                    
+                    currentGuiaXmlElement.parentNode.replaceChild(newElement, currentGuiaXmlElement);
+                    
+                    const guiaIndex = allGuiasElements.indexOf(currentGuiaXmlElement);
+                    if (guiaIndex !== -1) {
+                        allGuiasElements[guiaIndex] = newElement;
+                    }
+                    currentGuiaXmlElement = newElement;
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Erro ao salvar no XML:', error);
+                    alert('Erro ao salvar alterações: ' + error.message);
+                    return false;
+                }
+            }
+
+            return {
+                xmlToJson,
+                renderForm,
+                handleFieldChange,
+                toggleCollapse,
+                addItem,
+                removeItem,
+                saveToXml,
+                getCurrentData: () => currentGuiaData
+            };
+        })();
+
+        window.VisualEditor = VisualEditor;
+
+        // ========================================
+        // INICIALIZAÇÃO
+        // ========================================
+        async function loadDatabase() {
+            try {
+                if (!db) await DBManager.open();
+                referenceDatabase = await DBManager.getAll();
+                renderDatabase();
+                if (xmlDoc) processXML();
+            } catch (error) {
+                console.error('Erro ao carregar base de dados:', error);
+                showNotification('Falha ao carregar a base de dados: ' + error, 'error');
+            }
+        }
+
+        // ========================================
+        // INTERFACE - TABS
+        // ========================================
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'xml') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('xmlTab').classList.add('active');
+            } else if (tab === 'database') {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('databaseTab').classList.add('active');
+                renderDatabase();
+            } else if (tab === 'guias') {
+                document.querySelectorAll('.tab')[2].classList.add('active');
+                document.getElementById('guiasTab').classList.add('active');
+                updateGuiaSuggestions();
+                renderGuiasGrid();
+            }
+        }
+
+        // ========================================
+        // XML UPLOAD
+        // ========================================
+        const xmlInput = document.getElementById('xmlInput');
+        const xmlUploadArea = document.getElementById('xmlUploadArea');
+
+        xmlUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            xmlUploadArea.style.borderColor = 'var(--secondary)';
+        });
+
+        xmlUploadArea.addEventListener('dragleave', () => {
+            xmlUploadArea.style.borderColor = 'var(--primary)';
+        });
+
+        xmlUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            xmlUploadArea.style.borderColor = 'var(--primary)';
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.xml')) {
+                loadXMLFile(file);
+            } else {
+                showNotification('Por favor, selecione um arquivo XML válido', 'error');
+            }
+        });
+
+        xmlInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadXMLFile(file);
+        });
+
+        function loadXMLFile(file) {
+            xmlFileName = file.name;
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                try {
+                    const parser = new DOMParser();
+                    xmlDoc = parser.parseFromString(e.target.result, 'text/xml');
+                    
+                    if (xmlDoc.querySelector('parsererror')) {
+                        throw new Error('Erro ao parsear XML');
+                    }
+                    
+                    xmlUploadArea.classList.add('loaded');
+                    document.getElementById('xmlFileInfo').innerHTML = 
+                        `<span style="color: var(--success); font-weight: 600;">✓ ${file.name} carregado com sucesso</span>`;
+                    
+                    processXML();
+                    showNotification('XML carregado com sucesso!', 'success');
+                } catch (error) {
+                    console.error('Erro ao processar XML:', error);
+                    showNotification('Erro ao processar: ' + error.message, 'error');
+                }
+            };
+            
+            reader.onerror = () => {
+                showNotification('Erro ao ler o arquivo', 'error');
+            };
+            
+            reader.readAsText(file);
+        }
+
+        // ========================================
+        // PROCESSAMENTO XML
+        // ========================================
+        function processXML() {
+            clinicsData = [];
+            allGuiasElements = [];
+            
+            const consultaExecutantes = xmlDoc.querySelectorAll('ptu\\:guiaConsulta > ptu\\:contratadoExecutante, guiaConsulta > contratadoExecutante');
+            const sadtExecutantes = xmlDoc.querySelectorAll('ptu\\:guiaSADT > ptu\\:contratadoExecutante, guiaSADT > contratadoExecutante');
+            const honorariosExecutantes = xmlDoc.querySelectorAll('ptu\\:guiaHonorarios > ptu\\:dadosExecutante, guiaHonorarios > dadosExecutante');
+            const allExecutantes = [...consultaExecutantes, ...sadtExecutantes, ...honorariosExecutantes];
+            
+            const clinicsMap = new Map();
+            const unknownDoctors = new Set();
+
+            allExecutantes.forEach((exec) => {
+                const nome = exec.querySelector('ptu\\:nome, nome')?.textContent || 'Sem nome';
+                const cnpjElement = exec.querySelector('ptu\\:CPF_CNPJ ptu\\:cd_cnpj, CPF_CNPJ cd_cnpj');
+                const cpfElement = exec.querySelector('ptu\\:CPF_CNPJ ptu\\:cd_cpf, CPF_CNPJ cd_cpf');
+                const cnpjCpf = cnpjElement?.textContent || cpfElement?.textContent || 'N/A';
+                const cnes = exec.querySelector('ptu\\:CNES, CNES')?.textContent || 'N/A';
+                
+                const unimedPrest = exec.querySelector('ptu\\:UnimedPrestador, UnimedPrestador');
+                const cdPrest = unimedPrest?.querySelector('ptu\\:cd_Prest, cd_Prest');
+                const hasCdPrest = cdPrest && cdPrest.textContent.trim() !== '';
+                const currentCode = hasCdPrest ? cdPrest.textContent.trim() : '';
+                
+                const guia = exec.closest('ptu\\:guiaConsulta, guiaConsulta, ptu\\:guiaSADT, guiaSADT, ptu\\:guiaHonorarios, guiaHonorarios');
+                const nrGuias = guia?.querySelector('ptu\\:nr_Guias, nr_Guias');
+                const numeroGuia = nrGuias?.querySelector('ptu\\:nr_GuiaTissPrestador, nr_GuiaTissPrestador')?.textContent || 'N/A';
+                
+                const profExecutante = guia?.querySelector('ptu\\:profissionalExecutante, profissionalExecutante');
+                const doctorName = profExecutante?.querySelector('ptu\\:nome, nome')?.textContent || 'N/A';
+                const doctorCode = profExecutante?.querySelector('ptu\\:UnimedPrestador ptu\\:cd_Prest, UnimedPrestador cd_Prest')?.textContent || 'N/A';
+
+                let suggestedCode = null, isDivergent = false, isUnknown = false;
+                
+                if (doctorCode !== 'N/A') {
+                    const match = referenceDatabase.find(r => r.codPes === doctorCode);
+                    if (match && match.codClinica) {
+                        suggestedCode = match.codClinica;
+                        if (hasCdPrest && currentCode !== suggestedCode) {
+                            isDivergent = true;
+                        }
+                    } else {
+                        isUnknown = true;
+                        unknownDoctors.add(JSON.stringify({code: doctorCode, name: doctorName}));
+                    }
+                }
+
+                const key = `${cnpjCpf}_${cnes}_${doctorCode}`;
+                if (!clinicsMap.has(key)) {
+                    clinicsMap.set(key, {
+                        nome, cnpjCpf, cnes, doctorName, doctorCode,
+                        guideDetails: [],
+                        cdPrest: currentCode,
+                        originalCode: currentCode,
+                        suggestedCode,
+                        isDivergent,
+                        isUnknown,
+                        fixedCount: 0,
+                        isFullyFixed: false,
+                        isPartiallyFixed: false
+                    });
+                }
+                
+                const isGuiaFixed = hasCdPrest && (currentCode === suggestedCode || isUnknown || !suggestedCode);
+                clinicsMap.get(key).guideDetails.push({
+                    xmlElement: exec,
+                    numero: numeroGuia,
+                    isFixed: isGuiaFixed,
+                    newCode: currentCode,
+                    originalCode: currentCode
+                });
+                
+                if (isGuiaFixed) {
+                    clinicsMap.get(key).fixedCount++;
+                }
+                
+                const clinicEntry = clinicsMap.get(key);
+                clinicEntry.isFullyFixed = clinicEntry.fixedCount === clinicEntry.guideDetails.length;
+                clinicEntry.isPartiallyFixed = clinicEntry.fixedCount > 0 && clinicEntry.fixedCount < clinicEntry.guideDetails.length;
+            });
+
+            clinicsData = Array.from(clinicsMap.values());
+            
+            if (unknownDoctors.size > 0) {
+                showUnknownDoctorsAlert(Array.from(unknownDoctors).map(s => JSON.parse(s)));
+            }
+            
+            currentFilter = 'all';
+            filterTable('all');
+            updateStats();
+            
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('statsSection').classList.remove('hidden');
+            document.getElementById('tableSection').classList.remove('hidden');
+
+            // Coletar todas as guias
+            allGuiasNumbers = [];
+            const guias = xmlDoc.querySelectorAll('ptu\\:guiaConsulta, guiaConsulta, ptu\\:guiaSADT, guiaSADT, ptu\\:guiaHonorarios, guiaHonorarios');
+            guias.forEach(guia => {
+                allGuiasElements.push(guia);
+                const nrGuias = guia.querySelector('ptu\\:nr_Guias, nr_Guias');
+                const numeroGuia = nrGuias?.querySelector('ptu\\:nr_GuiaTissPrestador, nr_GuiaTissPrestador')?.textContent || '';
+                if (numeroGuia && !allGuiasNumbers.includes(numeroGuia)) {
+                    allGuiasNumbers.push(numeroGuia);
+                }
+            });
+        }
+
+        function showUnknownDoctorsAlert(doctors) {
+            const list = document.getElementById('unknownList');
+            list.innerHTML = '';
+            
+            doctors.forEach(doc => {
+                const item = document.createElement('div');
+                item.style.cssText = 'background: #f8f9ff; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid var(--danger);';
+                item.innerHTML = `
+                    <strong style="color: var(--primary);">Código: ${doc.code}</strong><br>
+                    <span style="font-size: 13px;">Nome: ${doc.name}</span>
+                `;
+                list.appendChild(item);
+            });
+            
+            document.getElementById('modalUnknown').classList.add('active');
+        }
+
+        // ========================================
+        // TABELA E FILTROS
+        // ========================================
+        function filterTable(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            const targetButton = document.querySelector(`.filter-btn[onclick*="'${filter}'"]`);
+            if (targetButton) targetButton.classList.add('active');
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('clinicsTable');
+            tbody.innerHTML = '';
+            
+            let filtered = clinicsData;
+            if (currentFilter === 'errors') {
+                filtered = clinicsData.filter(c => !c.isFullyFixed);
+            } else if (currentFilter === 'unknown') {
+                filtered = clinicsData.filter(c => c.isUnknown && !c.isFullyFixed);
+            }
+
+            filtered.forEach((clinic) => {
+                const realIndex = clinicsData.indexOf(clinic);
+                const tr = document.createElement('tr');
+                
+                let status = '', btnText = 'Editar', btnClass = 'btn-edit';
+                
+                if (clinic.isFullyFixed) {
+                    status = '<span class="status-badge fixed">✓ Totalmente Corrigida</span>';
+                    btnText = 'Ver/Editar';
+                } else if (clinic.isPartiallyFixed) {
+                    status = '<span class="status-badge divergent">◐ Parcialmente Corrigida</span>';
+                    btnText = 'Completar Correção';
+                } else if (clinic.isUnknown) {
+                    status = '<span class="status-badge unknown">⚠️ Médico Desconhecido</span>';
+                    btnText = 'Resolver';
+                } else if (clinic.isDivergent) {
+                    status = '<span class="status-badge divergent">⚠️ Divergente</span>';
+                    btnText = 'Corrigir';
+                } else {
+                    status = '<span class="status-badge missing">✗ Falta</span>';
+                    btnText = 'Adicionar';
+                }
+
+                const guiasStatus = `${clinic.fixedCount} / ${clinic.guideDetails.length}`;
+                const appliedCodes = new Set(clinic.guideDetails.filter(g => g.isFixed).map(g => g.newCode));
+                let displayCode = clinic.cdPrest || '-';
+                
+                if (appliedCodes.size > 1) {
+                    displayCode = '<span style="color: var(--warning);">Misto</span>';
+                } else if (appliedCodes.size === 1) {
+                    displayCode = appliedCodes.values().next().value;
+                } else {
+                    displayCode = clinic.suggestedCode || '-';
+                }
+                
+                const guiasNumeros = clinic.guideDetails.map(g => g.numero);
+                let guiasDisplay = guiasNumeros.slice(0, 3).join(', ');
+                if (guiasNumeros.length > 3) {
+                    guiasDisplay += `, <span style="color: #999;">+${guiasNumeros.length - 3}</span>`;
+                }
+                
+                tr.innerHTML = `
+                    <td style="font-size: 11px;">${clinic.nome}</td>
+                    <td>${clinic.cnpjCpf}</td>
+                    <td>${clinic.cnes}</td>
+                    <td style="font-size: 11px;">${clinic.doctorName}</td>
+                    <td>${clinic.doctorCode}</td>
+                    <td><strong style="color: var(--primary);">${displayCode}</strong></td>
+                    <td><strong>${guiasStatus}</strong></td>
+                    <td class="guide-cell-border" ondblclick="openFixModal(${realIndex})" 
+                        style="font-size: 10px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" 
+                        title="${guiasNumeros.join(', ')}">${guiasDisplay}</td>
+                    <td>${status}</td>
+                    <td><button class="btn-table ${btnClass}" onclick="openFixModal(${realIndex})">${btnText}</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            updateButtons();
+        }
+
+        function updateStats() {
+            const total = clinicsData.length;
+            const notFullyFixed = clinicsData.filter(c => !c.isFullyFixed);
+            const missingClinics = notFullyFixed.filter(c => !c.guideDetails.some(g => g.isFixed)).length;
+            const divergentClinics = notFullyFixed.filter(c => c.isDivergent).length;
+            const unknownClinics = notFullyFixed.filter(c => c.isUnknown).length;
+            const fullyFixedClinics = clinicsData.filter(c => c.isFullyFixed).length;
+
+            document.getElementById('totalClinics').textContent = total;
+            document.getElementById('missingTags').textContent = missingClinics;
+            document.getElementById('divergentTags').textContent = divergentClinics;
+            document.getElementById('unknownDoctors').textContent = unknownClinics;
+            document.getElementById('fixedTags').textContent = fullyFixedClinics;
+        }
+
+        function updateButtons() {
+            const hasFixed = clinicsData.some(c => c.fixedCount > 0);
+            document.getElementById('downloadBtn').disabled = !hasFixed;
+            document.getElementById('pdfBtn').disabled = !hasFixed;
+            
+            const canAutoFix = clinicsData.some(c => c.suggestedCode && !c.isFullyFixed && !c.isUnknown);
+            document.getElementById('autoFixBtn').disabled = !canAutoFix;
+        }
+
+        // ========================================
+        // BUSCA POR GUIA
+        // ========================================
+        function filterByGuia() {
+            const searchValue = document.getElementById('guiaSearchInput').value.trim();
+            if (!searchValue) {
+                showNotification('Digite o número da guia primeiro!', 'warning');
+                document.getElementById('guiaSearchInput').focus();
+                return;
+            }
+
+            const tbody = document.getElementById('clinicsTable');
+            const rows = tbody.querySelectorAll('tr');
+            let foundCount = 0;
+            let foundRows = [];
+            
+            rows.forEach(row => {
+                const guiasCell = row.querySelector('[title]');
+                const guiasText = guiasCell ? guiasCell.getAttribute('title') : '';
+                
+                if (guiasText.includes(searchValue)) {
+                    row.style.display = '';
+                    row.style.background = '#fffacd';
+                    row.style.transition = 'all 0.3s ease';
+                    foundCount++;
+                    foundRows.push(row);
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            if (foundCount === 0) {
+                showNotification(`Nenhuma guia encontrada com o número: ${searchValue}`, 'error');
+                clearGuiaFilter();
+            } else {
+                if (foundRows.length > 0) {
+                    foundRows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                showNotification(`${foundCount} linha(s) encontrada(s) com a guia: ${searchValue}`, 'success');
+            }
+        }
+
+        function clearGuiaFilter() {
+            document.getElementById('guiaSearchInput').value = '';
+            const tbody = document.getElementById('clinicsTable');
+            const rows = tbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                row.style.display = '';
+                row.style.background = '';
+            });
+            renderTable();
+        }
+
+        // ========================================
+        // MODAL CORREÇÃO
+        // ========================================
+        function openFixModal(index) {
+            currentClinicIndex = index;
+            const clinic = clinicsData[index];
+            
+            document.getElementById('modalTitle').textContent = 
+                clinic.fixedCount > 0 ? '✏️ Editar Código' : '➕ Adicionar Código';
+            document.getElementById('modalClinicName').textContent = clinic.nome;
+            document.getElementById('modalClinicCNPJ').textContent = clinic.cnpjCpf;
+            document.getElementById('modalClinicCNES').textContent = clinic.cnes;
+            document.getElementById('modalDoctorName').textContent = clinic.doctorName;
+            document.getElementById('modalDoctorCode').textContent = clinic.doctorCode;
+            document.getElementById('modalGuides').textContent = `${clinic.fixedCount} / ${clinic.guideDetails.length}`;
+            
+            const guidesChecklist = document.getElementById('guidesChecklist');
+            guidesChecklist.innerHTML = '';
+            
+            clinic.guideDetails.forEach((guide, i) => {
+                const div = document.createElement('div');
+                div.classList.add('guide-checklist-item');
+                div.style.backgroundColor = guide.isFixed ? '#e0f7e0' : 'transparent';
+                
+                const checked = !guide.isFixed ? 'checked' : '';
+                const disabled = guide.isFixed ? 'disabled' : '';
+                const codeDisplay = guide.isFixed ? ` (Cód: ${guide.newCode})` : '';
+                
+                div.innerHTML = `
+                    <input type="checkbox" id="guia_${i}" name="guia_select" value="${i}" 
+                           ${checked} ${disabled} style="margin-right: 10px; width: 16px; height: 16px;">
+                    <label for="guia_${i}" style="font-weight: normal; font-size: 13px; flex: 1;">
+                        ${guide.numero}${codeDisplay}
+                    </label>
+                    ${guide.isFixed ? '<span class="status-badge fixed" style="margin-left: auto;">Corrigida</span>' : ''}
+                `;
+                guidesChecklist.appendChild(div);
+            });
+
+            const modalOriginalCode = document.getElementById('modalOriginalCode');
+            if (clinic.originalCode && clinic.originalCode !== '') {
+                document.getElementById('modalPreviousCode').textContent = clinic.originalCode;
+                modalOriginalCode.style.display = 'block';
+            } else {
+                modalOriginalCode.style.display = 'none';
+            }
+
+            if (clinic.isUnknown) {
+                document.getElementById('unknownAlert').classList.remove('hidden');
+            } else {
+                document.getElementById('unknownAlert').classList.add('hidden');
+            }
+
+            const suggestionBox = document.getElementById('suggestionBox');
+            if (clinic.suggestedCode) {
+                const match = referenceDatabase.find(r => r.codPes === clinic.doctorCode);
+                document.getElementById('suggestionText').innerHTML = `
+                    Código: <strong style="font-size: 16px; color: #2e7d32;">${clinic.suggestedCode}</strong><br>
+                    Clínica: ${match?.clinica || 'N/A'}
+                `;
+                suggestionBox.classList.remove('hidden');
+            } else {
+                suggestionBox.classList.add('hidden');
+            }
+
+            const code = clinic.suggestedCode || clinic.cdPrest || '';
+            document.getElementById('clinicCodeInput').value = code;
+            updateCodePreview(code);
+            document.getElementById('modalFix').classList.add('active');
+            document.getElementById('clinicCodeInput').focus();
+        }
+
+        function checkAllGuides(checked) {
+            document.querySelectorAll('#guidesChecklist input[name="guia_select"]:not(:disabled)')
+                .forEach(checkbox => checkbox.checked = checked);
+        }
+
+        function updateCodePreview(code) {
+            document.getElementById('codePreview').textContent = code ? `Código: ${code}` : 'Código: -';
+        }
+
+        function confirmFix() {
+            const code = document.getElementById('clinicCodeInput').value.trim();
+            if (!code) {
+                showNotification('Por favor, informe o código da clínica', 'warning');
+                return;
+            }
+
+            const clinic = clinicsData[currentClinicIndex];
+            const selectedIndices = [];
+            
+            document.querySelectorAll('#guidesChecklist input[name="guia_select"]:checked:not(:disabled)')
+                .forEach(checkbox => {
+                    selectedIndices.push(parseInt(checkbox.value));
+                });
+
+            if (selectedIndices.length === 0) {
+                showNotification('Nenhuma guia selecionada para correção', 'warning');
+                return;
+            }
+            
+            let modifiedGuidesCount = 0;
+            
+            selectedIndices.forEach(index => {
+                const guide = clinic.guideDetails[index];
+                const exec = guide.xmlElement;
+                const nsURI = exec.namespaceURI || exec.lookupNamespaceURI('ptu') || '';
+                const prefix = exec.prefix || 'ptu';
+                
+                let unimedPrest = exec.querySelector('ptu\\:UnimedPrestador, UnimedPrestador');
+                
+                if (!unimedPrest) {
+                    unimedPrest = nsURI 
+                        ? xmlDoc.createElementNS(nsURI, `${prefix}:UnimedPrestador`) 
+                        : xmlDoc.createElement('UnimedPrestador');
+                    
+                    const cdUniPrest = nsURI 
+                        ? xmlDoc.createElementNS(nsURI, `${prefix}:cd_Uni_Prest`) 
+                        : xmlDoc.createElement('cd_Uni_Prest');
+                    cdUniPrest.textContent = '262';
+                    
+                    const cdPrest = nsURI 
+                        ? xmlDoc.createElementNS(nsURI, `${prefix}:cd_Prest`) 
+                        : xmlDoc.createElement('cd_Prest');
+                    cdPrest.textContent = code;
+                    
+                    unimedPrest.appendChild(cdUniPrest);
+                    unimedPrest.appendChild(cdPrest);
+                    
+                    const nome = exec.querySelector('ptu\\:nome, nome');
+                    if (nome) {
+                        exec.insertBefore(unimedPrest, nome);
+                    } else {
+                        exec.appendChild(unimedPrest);
+                    }
+                } else {
+                    let cdUniPrest = unimedPrest.querySelector('ptu\\:cd_Uni_Prest, cd_Uni_Prest');
+                    if (!cdUniPrest) {
+                        cdUniPrest = nsURI 
+                            ? xmlDoc.createElementNS(nsURI, `${prefix}:cd_Uni_Prest`) 
+                            : xmlDoc.createElement('cd_Uni_Prest');
+                        cdUniPrest.textContent = '262';
+                        unimedPrest.insertBefore(cdUniPrest, unimedPrest.firstChild);
+                    }
+                    
+                    let cdPrest = unimedPrest.querySelector('ptu\\:cd_Prest, cd_Prest');
+                    if (!cdPrest) {
+                        cdPrest = nsURI 
+                            ? xmlDoc.createElementNS(nsURI, `${prefix}:cd_Prest`) 
+                            : xmlDoc.createElement('cd_Prest');
+                        unimedPrest.appendChild(cdPrest);
+                    }
+                    cdPrest.textContent = code;
+                }
+                
+                guide.isFixed = true;
+                guide.newCode = code;
+                modifiedGuidesCount++;
+            });
+
+            if (modifiedGuidesCount > 0) {
+                clinic.fixedCount = clinic.guideDetails.filter(g => g.isFixed).length;
+                clinic.isFullyFixed = clinic.fixedCount === clinic.guideDetails.length;
+                clinic.isPartiallyFixed = clinic.fixedCount > 0 && clinic.fixedCount < clinic.guideDetails.length;
+                clinic.cdPrest = code;
+                
+                if (clinic.isFullyFixed) {
+                    clinic.isDivergent = false;
+                    clinic.isUnknown = false;
+                }
+                
+                closeModal('modalFix');
+                renderTable();
+                updateStats();
+                showNotification(`${modifiedGuidesCount} guia(s) corrigida(s) com sucesso!`, 'success');
+            }
+        }
+
+        // ========================================
+        // CORREÇÃO AUTOMÁTICA
+        // ========================================
+        function autoCorrect() {
+            let correctedCount = 0;
+            let totalGuidesCorrected = 0;
+            
+            clinicsData.forEach(clinic => {
+                if (clinic.suggestedCode && !clinic.isFullyFixed && !clinic.isUnknown) {
+                    let guidesCorrectedForClinic = 0;
+                    const suggestedCode = clinic.suggestedCode;
+                    
+                    clinic.guideDetails.forEach(guide => {
+                        if (!guide.isFixed) {
+                            const exec = guide.xmlElement;
+                            const nsURI = exec.namespaceURI || exec.lookupNamespaceURI('ptu') || '';
+                            const prefix = exec.prefix || 'ptu';
+                            
+                            let unimedPrest = exec.querySelector('ptu\\:UnimedPrestador, UnimedPrestador');
+                            
+                            if (!unimedPrest) {
+                                unimedPrest = nsURI 
+                                    ? xmlDoc.createElementNS(nsURI, `${prefix}:UnimedPrestador`) 
+                                    : xmlDoc.createElement('UnimedPrestador');
+                                
+                                const cdUniPrest = nsURI 
+                                    ? xmlDoc.createElementNS(nsURI, `${prefix}:cd_Uni_Prest`) 
+                                    : xmlDoc.createElement('cd_Uni_Prest');
+                                cdUniPrest.textContent = '262';
+                                
+                                const cdPrest = nsURI 
+                                    ? xmlDoc.createElementNS(nsURI, `${prefix}:cd_Prest`) 
+                                    : xmlDoc.createElement('cd_Prest');
+                                cdPrest.textContent = suggestedCode;
+                                
+                                unimedPrest.appendChild(cdUniPrest);
+                                unimedPrest.appendChild(cdPrest);
+                                
+                                const nome = exec.querySelector('ptu\\:nome, nome');
+                                if (nome) {
+                                    exec.insertBefore(unimedPrest, nome);
+                                } else {
+                                    exec.appendChild(unimedPrest);
+                                }
+                            } else {
+                                let cdPrest = unimedPrest.querySelector('ptu\\:cd_Prest, cd_Prest');
+                                if (!cdPrest) {
+                                    cdPrest = nsURI 
+                                        ? xmlDoc.createElementNS(nsURI, `${prefix}:cd_Prest`) 
+                                        : xmlDoc.createElement('cd_Prest');
+                                    unimedPrest.appendChild(cdPrest);
+                                }
+                                cdPrest.textContent = suggestedCode;
+                            }
+                            
+                            guide.isFixed = true;
+                            guide.newCode = suggestedCode;
+                            guidesCorrectedForClinic++;
+                            totalGuidesCorrected++;
+                        }
+                    });
+
+                    if (guidesCorrectedForClinic > 0) {
+                        clinic.fixedCount = clinic.guideDetails.filter(g => g.isFixed).length;
+                        clinic.isFullyFixed = clinic.fixedCount === clinic.guideDetails.length;
+                        clinic.isPartiallyFixed = clinic.fixedCount > 0 && clinic.fixedCount < clinic.guideDetails.length;
+                        clinic.cdPrest = suggestedCode;
+                        
+                        if (clinic.isFullyFixed) {
+                            clinic.isDivergent = false;
+                            clinic.isUnknown = false;
+                        }
+                        correctedCount++;
+                    }
+                }
+            });
+            
+            showNotification(
+                `Correção automática concluída!\n${correctedCount} clínica(s) tiveram ${totalGuidesCorrected} guias corrigidas.`,
+                'success'
+            );
+            renderTable();
+            updateStats();
+        }
+
+        // ========================================
+        // DOWNLOAD XML
+        // ========================================
+        function formatXML(xml) {
+            const PADDING = '\t';
+            const reg = /(>)(<)(\/*)/g;
+            let formatted = '';
+            let pad = 0;
+            
+            xml = xml.replace(reg, '$1\n$2$3');
+            xml.split('\n').forEach((node) => {
+                let indent = 0;
+                if (node.match(/.+<\/\w[^>]*>$/)) {
+                    indent = 0;
+                } else if (node.match(/^<\/\w/) && pad > 0) {
+                    pad -= 1;
+                } else if (node.match(/^<\w[^>]*[^\/]>.*$/)) {
+                    indent = 1;
+                } else {
+                    indent = 0;
+                }
+                formatted += PADDING.repeat(pad) + node + '\n';
+                pad += indent;
+            });
+            
+            return formatted.trim();
+        }
+
+        function downloadXML() {
+            if (!clinicsData.some(c => c.fixedCount > 0)) {
+                showNotification('Nenhuma guia foi corrigida. Não é possível baixar o XML.', 'warning');
+                return;
+            }
+            document.getElementById('modalDownloadOptions').classList.add('active');
+        }
+
+        function performDownload(withIndentation) {
+            closeModal('modalDownloadOptions');
+            
+            const originalGuias = xmlDoc.querySelectorAll('ptu\\:guiaConsulta, guiaConsulta, ptu\\:guiaSADT, guiaSADT, ptu\\:guiaHonorarios, guiaHonorarios').length;
+            const serializer = new XMLSerializer();
+            let xmlString = serializer.serializeToString(xmlDoc);
+            const finalDoc = new DOMParser().parseFromString(xmlString, 'text/xml');
+            const finalGuias = finalDoc.querySelectorAll('ptu\\:guiaConsulta, guiaConsulta, ptu\\:guiaSADT, guiaSADT, ptu\\:guiaHonorarios, guiaHonorarios').length;
+            
+            if (originalGuias !== finalGuias) {
+                if (!confirm(`⚠️ AVISO: Número de guias diferente!\n\nOriginal: ${originalGuias} guias\nFinal: ${finalGuias} guias\n\nDeseja continuar?`)) {
+                    return;
+                }
+            }
+            
+            if (withIndentation) {
+                xmlString = formatXML(xmlString);
+            } else {
+                xmlString = xmlString.replace(/>\s*</g, '>\n<');
+                xmlString = xmlString.split('\n').map(line => line.trim()).join('\n');
+            }
+            
+            const blob = new Blob([xmlString], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = xmlFileName.replace('.xml', withIndentation ? '_corrigido_identado.xml' : '_corrigido_sem_ident.xml');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('XML exportado com sucesso!', 'success');
+        }
+
+        // ========================================
+        // GERAÇÃO DE PDF
+        // ========================================
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+
+            // Header
+            doc.setFillColor(102, 126, 234);
+            doc.rect(0, 0, pageWidth, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.text('Relatório de Correções - XML', pageWidth / 2, 15, { align: 'center' });
+            doc.setFontSize(10);
+            doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, pageWidth / 2, 25, { align: 'center' });
+            doc.text(`Arquivo: ${xmlFileName}`, pageWidth / 2, 32, { align: 'center' });
+
+            doc.setTextColor(0, 0, 0);
+            let yPos = 50;
+            
+            // Resumo
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('Resumo:', 14, yPos);
+            
+            yPos += 8;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(10);
+            
+            const total = clinicsData.length;
+            const fullyFixed = clinicsData.filter(c => c.isFullyFixed).length;
+            const partiallyFixed = clinicsData.filter(c => c.isPartiallyFixed).length;
+            const unknown = clinicsData.filter(c => c.isUnknown).length;
+            
+            doc.text(`Total: ${total} | Totalmente Corrigidas: ${fullyFixed} | Parcialmente: ${partiallyFixed} | Médicos desconhecidos: ${unknown}`, 14, yPos);
+            yPos += 15;
+            
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('Detalhe das Correções e Pendências:', 14, yPos);
+            yPos += 10;
+
+            // Detalhes
+            clinicsData.forEach((c) => {
+                const modifiedGuides = c.guideDetails.filter(g => g.isFixed && (g.originalCode === '' || g.originalCode !== g.newCode)).map(g => g.numero);
+                const pendingGuides = c.guideDetails.filter(g => !g.isFixed).map(g => g.numero);
+
+                if (pendingGuides.length === 0 && modifiedGuides.length === 0) return;
+
+                if (yPos > pageHeight - 60) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                let status;
+                if (c.isFullyFixed) status = 'TOTALMENTE CORRIGIDA';
+                else if (c.isPartiallyFixed) status = 'PARCIALMENTE CORRIGIDA';
+                else if (c.isUnknown) status = 'MÉDICO DESCONHECIDO';
+                else if (c.isDivergent) status = 'DIVERGENTE';
+                else status = 'PENDENTE';
+
+                doc.setFillColor(240, 242, 255);
+                doc.rect(14, yPos - 5, pageWidth - 28, 8, 'F');
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(102, 126, 234);
+                doc.text(`Clínica: ${c.nome} / Médico: ${c.doctorName}`, 16, yPos);
+                yPos += 10;
+
+                doc.setFontSize(8);
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(0, 0, 0);
+                doc.text(`Cód. Médico: ${c.doctorCode} | Cód. Aplicado: ${c.cdPrest || '-'} | Status: ${status}`, 16, yPos);
+                yPos += 5;
+                doc.text(`Guias Corrigidas: ${c.fixedCount} | Pendentes: ${c.guideDetails.length - c.fixedCount} | Total: ${c.guideDetails.length}`, 16, yPos);
+                yPos += 7;
+
+                if (modifiedGuides.length > 0) {
+                    doc.setFillColor(232, 245, 233);
+                    const correctedText = `✓ Corrigidas/Alteradas: ${modifiedGuides.join(', ')}`;
+                    const correctedLines = doc.splitTextToSize(correctedText, pageWidth - 32);
+                    const correctedHeight = correctedLines.length * 5 + 2;
+                    
+                    doc.rect(14, yPos - 3, pageWidth - 28, correctedHeight, 'F');
+                    doc.setTextColor(46, 125, 50);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(correctedLines, 16, yPos);
+                    yPos += correctedHeight + 2;
+                }
+
+                if (pendingGuides.length > 0) {
+                    doc.setFillColor(255, 243, 224);
+                    const pendingText = `✗ Pendentes: ${pendingGuides.join(', ')}`;
+                    const pendingLines = doc.splitTextToSize(pendingText, pageWidth - 32);
+                    const pendingHeight = pendingLines.length * 5 + 2;
+                    
+                    doc.rect(14, yPos - 3, pageWidth - 28, pendingHeight, 'F');
+                    doc.setTextColor(245, 124, 0);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(pendingLines, 16, yPos);
+                    yPos += pendingHeight + 2;
+                }
+
+                yPos += 5;
+                doc.setDrawColor(224, 224, 224);
+                doc.line(14, yPos, pageWidth - 14, yPos);
+                yPos += 8;
+            });
+
+            // Footer
+            const finalPageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= finalPageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(128);
+                doc.text(`Página ${i} de ${finalPageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            }
+
+            doc.save(`relatorio_${new Date().getTime()}.pdf`);
+            showNotification('Relatório PDF gerado com sucesso!', 'success');
+        }
+
+        // ========================================
+        // GERENCIAMENTO DE PRESTADORES
+        // ========================================
+        function renderDatabase() {
+            const tbody = document.getElementById('databaseTable');
+            tbody.innerHTML = '';
+            
+            if (referenceDatabase.length === 0) {
+                document.getElementById('emptyDatabase').classList.remove('hidden');
+                return;
+            }
+            
+            document.getElementById('emptyDatabase').classList.add('hidden');
+            
+            referenceDatabase.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${item.codPes}</strong></td>
+                    <td>${item.nome}</td>
+                    <td>${item.especialidade || '-'}</td>
+                    <td><strong style="color: var(--primary);">${item.codClinica}</strong></td>
+                    <td>${item.clinica}</td>
+                    <td>
+                        <button class="btn-table btn-edit" onclick="editDatabase(${index})">✏️</button>
+                        <button class="btn-table btn-delete" onclick="deleteDatabase(${index})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterDatabase() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#databaseTable tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(search) ? '' : 'none';
+            });
+        }
+
+        function openAddModal() {
+            editingIndex = -1;
+            document.getElementById('dbModalTitle').textContent = 'Adicionar Prestador';
+            document.getElementById('dbCodPes').value = '';
+            document.getElementById('dbNome').value = '';
+            document.getElementById('dbEspecialidade').value = '';
+            document.getElementById('dbCodClinica').value = '';
+            document.getElementById('dbClinica').value = '';
+            document.getElementById('modalDatabase').classList.add('active');
+        }
+
+        function editDatabase(index) {
+            editingIndex = index;
+            const item = referenceDatabase[index];
+            document.getElementById('dbModalTitle').textContent = 'Editar Prestador';
+            document.getElementById('dbCodPes').value = item.codPes;
+            document.getElementById('dbNome').value = item.nome;
+            document.getElementById('dbEspecialidade').value = item.especialidade || '';
+            document.getElementById('dbCodClinica').value = item.codClinica;
+            document.getElementById('dbClinica').value = item.clinica;
+            document.getElementById('modalDatabase').classList.add('active');
+        }
+
+        async function deleteDatabase(index) {
+            if (confirm('Tem certeza que deseja excluir este prestador?')) {
+                try {
+                    await DBManager.delete(referenceDatabase[index].id);
+                    showNotification('Prestador excluído com sucesso!', 'success');
+                } catch (error) {
+                    showNotification('Erro ao excluir: ' + error, 'error');
+                }
+            }
+        }
+
+        async function clearDatabase() {
+            if (confirm('⚠️ ATENÇÃO: Isso irá apagar TODOS os prestadores da base de dados!\n\nTem certeza que deseja continuar?')) {
+                try {
+                    await DBManager.clear();
+                    showNotification('Base de dados limpa com sucesso!', 'success');
+                } catch (error) {
+                    showNotification('Erro ao limpar base: ' + error, 'error');
+                }
+            }
+        }
+
+        async function saveToDatabase() {
+            const item = {
+                codPes: document.getElementById('dbCodPes').value.trim(),
+                nome: document.getElementById('dbNome').value.trim(),
+                especialidade: document.getElementById('dbEspecialidade').value.trim(),
+                codClinica: document.getElementById('dbCodClinica').value.trim(),
+                clinica: document.getElementById('dbClinica').value.trim()
+            };
+
+            if (!item.codPes || !item.nome || !item.codClinica || !item.clinica) {
+                showNotification('Preencha todos os campos obrigatórios!', 'warning');
+                return;
+            }
+
+            try {
+                if (editingIndex >= 0) {
+                    await DBManager.update({ ...item, id: referenceDatabase[editingIndex].id });
+                    showNotification('Prestador atualizado com sucesso!', 'success');
+                } else {
+                    await DBManager.add(item);
+                    showNotification('Prestador adicionado com sucesso!', 'success');
+                }
+                closeModal('modalDatabase');
+            } catch (error) {
+                showNotification('Erro ao salvar: ' + error, 'error');
+            }
+        }
+
+        // ========================================
+        // IMPORTAR/EXPORTAR
+        // ========================================
+        document.getElementById('importInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const workbook = XLSX.read(e.target.result, { type: 'binary' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const data = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    const imported = data.map(row => ({
+                        codPes: String(row.COD_PES || row['COD PES'] || '').trim(),
+                        nome: String(row.NOME || '').trim(),
+                        especialidade: String(row.ESPECIALIDADE || '').trim(),
+                        codClinica: String(row.COD_C || row['COD C'] || '').trim(),
+                        clinica: String(row.CLINICA || '').trim()
+                    })).filter(item => item.codPes && item.codClinica);
+
+                    for (const item of imported) {
+                        await DBManager.add(item);
+                    }
+                    
+                    showNotification(`✓ ${imported.length} prestadores importados com sucesso!`, 'success');
+                } catch (error) {
+                    showNotification('Erro ao importar: ' + error.message, 'error');
+                }
+            };
+            reader.readAsBinaryString(file);
+        });
+
+        function exportDatabase() {
+            if (referenceDatabase.length === 0) {
+                showNotification('Nenhum dado para exportar!', 'warning');
+                return;
+            }
+            
+            const ws = XLSX.utils.json_to_sheet(referenceDatabase.map(item => ({
+                'COD_PES': item.codPes,
+                'NOME': item.nome,
+                'ESPECIALIDADE': item.especialidade,
+                'COD_C': item.codClinica,
+                'CLINICA': item.clinica
+            })));
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Prestadores');
+            XLSX.writeFile(wb, `prestadores_${new Date().getTime()}.xlsx`);
+            
+            showNotification('Base de dados exportada com sucesso!', 'success');
+        }
+
+        // ========================================
+        // GUIAS TAB - FUNÇÕES VISUAIS
+        // ========================================
+        function updateGuiaSuggestions() {
+            if (!xmlDoc) {
+                document.getElementById('guiaEmptyState').classList.remove('hidden');
+                document.getElementById('guiasGridSection').classList.add('hidden');
+                return;
+            }
+            
+            document.getElementById('guiaEmptyState').classList.add('hidden');
+            const datalist = document.getElementById('guiaSuggestions');
+            datalist.innerHTML = '';
+            
+            allGuiasNumbers.forEach(num => {
+                const option = document.createElement('option');
+                option.value = num;
+                datalist.appendChild(option);
+            });
+        }
+
+        function renderGuiasGrid() {
+            if (!xmlDoc || allGuiasElements.length === 0) return;
+            
+            document.getElementById('guiasGridSection').classList.remove('hidden');
+            const grid = document.getElementById('guiasGrid');
+            grid.innerHTML = '';
+
+            allGuiasElements.forEach((guia, index) => {
+                const nrGuias = guia.querySelector('ptu\\:nr_Guias, nr_Guias');
+                const numeroGuia = nrGuias?.querySelector('ptu\\:nr_GuiaTissPrestador, nr_GuiaTissPrestador')?.textContent || 'N/A';
+                
+                const dadosBenef = guia.querySelector('ptu\\:dadosBeneficiario, dadosBeneficiario');
+                const beneficiario = dadosBenef?.querySelector('ptu\\:nm_Benef, nm_Benef')?.textContent || 'N/A';
+                
+                const contratado = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
+                const prestador = contratado?.querySelector('ptu\\:nome, nome')?.textContent || 'N/A';
+                
+                const dadosGuia = guia.querySelector('ptu\\:dadosGuia, dadosGuia');
+                const dataAtend = dadosGuia?.querySelector('ptu\\:dt_Atendimento, dt_Atendimento')?.textContent || 'N/A';
+                
+                const tipoGuia = guia.tagName.toLowerCase().includes('consulta') ? 'Consulta' : 
+                                guia.tagName.toLowerCase().includes('sadt') ? 'SADT' : 'Honorários';
+                
+                const card = document.createElement('div');
+                card.className = 'guia-card';
+                card.onclick = () => openGuiaEditorVisual(index);
+                card.innerHTML = `
+                    <h4>📋 Guia ${numeroGuia}</h4>
+                    <p><strong>Tipo:</strong> ${tipoGuia}</p>
+                    <p><strong>Beneficiário:</strong> ${beneficiario.substring(0, 30)}${beneficiario.length > 30 ? '...' : ''}</p>
+                    <p><strong>Prestador:</strong> ${prestador.substring(0, 30)}${prestador.length > 30 ? '...' : ''}</p>
+                    <p><strong>Data:</strong> ${formatDate(dataAtend)}</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr || dateStr.length !== 8) return dateStr;
+            return `${dateStr.substring(6, 8)}/${dateStr.substring(4, 6)}/${dateStr.substring(0, 4)}`;
+        }
+
+        function searchGuiaInTab() {
+            const numero = document.getElementById('guiaNumeroInput').value.trim();
+            if (!numero || !xmlDoc) {
+                showNotification('Carregue um XML e digite um número de guia válido!', 'warning');
+                return;
+            }
+
+            const index = allGuiasNumbers.indexOf(numero);
+            if (index === -1) {
+                showNotification(`Guia ${numero} não encontrada!`, 'error');
+                return;
+            }
+
+            openGuiaEditorVisual(index);
+        }
+
+        function openGuiaEditorVisual(index) {
+            currentGuiaIndex = index;
+            currentGuiaElement = allGuiasElements[index];
+            
+            const nrGuias = currentGuiaElement.querySelector('ptu\\:nr_Guias, nr_Guias');
+            const numeroGuia = nrGuias?.querySelector('ptu\\:nr_GuiaTissPrestador, nr_GuiaTissPrestador')?.textContent || 'N/A';
+            
+            document.getElementById('guiaNumeroTitle').textContent = numeroGuia;
+            
+            const tagName = currentGuiaElement.tagName.replace(/^ptu:/, '');
+            const guiaJson = {};
+            guiaJson[tagName] = VisualEditor.xmlToJson(currentGuiaElement);
+            
+            VisualEditor.renderForm(guiaJson, currentGuiaElement);
+            document.getElementById('modalGuiaEdit').classList.add('active');
+        }
+
+        function navigateGuia(direction) {
+            if (currentGuiaIndex === -1) return;
+
+            switch (direction) {
+                case 'first':
+                    currentGuiaIndex = 0;
+                    break;
+                case 'previous':
+                    if (currentGuiaIndex > 0) currentGuiaIndex--;
+                    break;
+                case 'next':
+                    if (currentGuiaIndex < allGuiasElements.length - 1) currentGuiaIndex++;
+                    break;
+                case 'last':
+                    currentGuiaIndex = allGuiasElements.length - 1;
+                    break;
+            }
+
+            openGuiaEditorVisual(currentGuiaIndex);
+        }
+
+        function saveGuiaChangesVisual() {
+            if (VisualEditor.saveToXml()) {
+                showNotification('Alterações salvas com sucesso no XML!', 'success');
+                closeModal('modalGuiaEdit');
+                processXML();
+            }
+        }
+
+        function exportGuiasToExcel() {
+            if (!xmlDoc || allGuiasElements.length === 0) {
+                showNotification('Nenhuma guia para exportar!', 'warning');
+                return;
+            }
+
+            const data = [];
+            allGuiasElements.forEach(guia => {
+                const nrGuias = guia.querySelector('ptu\\:nr_Guias, nr_Guias');
+                const numeroGuia = nrGuias?.querySelector('ptu\\:nr_GuiaTissPrestador, nr_GuiaTissPrestador')?.textContent || 'N/A';
+                
+                const dadosBenef = guia.querySelector('ptu\\:dadosBeneficiario, dadosBeneficiario');
+                const beneficiario = dadosBenef?.querySelector('ptu\\:nm_Benef, nm_Benef')?.textContent || 'N/A';
+                const carteira = dadosBenef?.querySelector('ptu\\:id_Benef, id_Benef')?.textContent || 'N/A';
+                
+                const contratado = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
+                const prestador = contratado?.querySelector('ptu\\:nome, nome')?.textContent || 'N/A';
+                const cnpjElement = contratado?.querySelector('ptu\\:CPF_CNPJ ptu\\:cd_cnpj, CPF_CNPJ cd_cnpj');
+                const cpfElement = contratado?.querySelector('ptu\\:CPF_CNPJ ptu\\:cd_cpf, CPF_CNPJ cd_cpf');
+                const cnpjCpf = cnpjElement?.textContent || cpfElement?.textContent || 'N/A';
+                
+                const profExecutante = guia.querySelector('ptu\\:profissionalExecutante, profissionalExecutante');
+                const medico = profExecutante?.querySelector('ptu\\:nome, nome')?.textContent || 'N/A';
+                
+                const dadosGuia = guia.querySelector('ptu\\:dadosGuia, dadosGuia');
+                const dataAtend = dadosGuia?.querySelector('ptu\\:dt_Atendimento, dt_Atendimento')?.textContent || 'N/A';
+                
+                const tipoGuia = guia.tagName.toLowerCase().includes('consulta') ? 'Consulta' : 
+                                guia.tagName.toLowerCase().includes('sadt') ? 'SADT' : 'Honorários';
+
+                data.push({
+                    'Nº Guia': numeroGuia,
+                    'Tipo': tipoGuia,
+                    'Beneficiário': beneficiario,
+                    'Carteira': carteira,
+                    'Prestador': prestador,
+                    'CNPJ/CPF': cnpjCpf,
+                    'Médico': medico,
+                    'Data Atend.': formatDate(dataAtend)
+                });
+            });
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Guias');
+            XLSX.writeFile(wb, `guias_${new Date().getTime()}.xlsx`);
+            
+            showNotification('Guias exportadas com sucesso!', 'success');
+        }
+
+        // ========================================
+        // EDIÇÃO EM MASSA
+        // ========================================
+        let bulkEditResults = [];
+
+        function openBulkEditModal() {
+            if (!xmlDoc || allGuiasElements.length === 0) {
+                showNotification('Carregue um XML primeiro!', 'warning');
+                return;
+            }
+            document.getElementById('modalBulkEdit').classList.add('active');
+            document.getElementById('bulkAnalysisResults').innerHTML = '';
+            document.getElementById('bulkPreviewResults').classList.add('hidden');
+            document.getElementById('bulkApplyBtn').disabled = true;
+            bulkEditResults = [];
+        }
+
+        function analyzeBulkFields() {
+            const analysisDiv = document.getElementById('bulkAnalysisResults');
+            analysisDiv.innerHTML = '<div class="spinner"></div><p style="text-align: center; color: #666;">Analisando...</p>';
+
+            setTimeout(() => {
+                const fieldStats = {};
+                
+                allGuiasElements.forEach(guia => {
+                    const fields = {
+                        'CNES': guia.querySelector('ptu\\:CNES, CNES')?.textContent,
+                        'CNPJ Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cnpj, contratadoExecutante CPF_CNPJ cd_cnpj')?.textContent,
+                        'CPF Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cpf, contratadoExecutante CPF_CNPJ cd_cpf')?.textContent,
+                        'Nome Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:nome, contratadoExecutante nome')?.textContent,
+                        'Código Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:UnimedPrestador ptu\\:cd_Prest, contratadoExecutante UnimedPrestador cd_Prest')?.textContent,
+                        'Conselho Médico': guia.querySelector('ptu\\:profissionalExecutante ptu\\:conselhoProfissional, profissionalExecutante conselhoProfissional')?.textContent,
+                        'Indicação Acidente': guia.querySelector('ptu\\:dadosGuia ptu\\:in_AcidTrab, dadosGuia in_AcidTrab')?.textContent
+                    };
+
+                    for (const [label, value] of Object.entries(fields)) {
+                        if (value) {
+                            if (!fieldStats[label]) fieldStats[label] = {};
+                            fieldStats[label][value] = (fieldStats[label][value] || 0) + 1;
+                        }
+                    }
+                });
+
+                let html = '<div class="table-container" style="max-height: 400px;"><table><thead><tr><th>Campo</th><th>Valor</th><th>Quantidade</th><th>Ação</th></tr></thead><tbody>';
+                
+                for (const [field, values] of Object.entries(fieldStats)) {
+                    const sortedValues = Object.entries(values).sort((a, b) => b[1] - a[1]);
+                    sortedValues.forEach(([value, count]) => {
+                        const percentage = ((count / allGuiasElements.length) * 100).toFixed(1);
+                        html += `
+                            <tr>
+                                <td><strong>${field}</strong></td>
+                                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${value}</td>
+                                <td><span class="status-badge info">${count} guias (${percentage}%)</span></td>
+                                <td>
+                                    <button class="btn-table btn-edit" onclick="quickBulkEdit('${field}', \`${value.replace(/`/g, '\\`')}\`)">
+                                        ✏️ Editar
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+                
+                html += '</tbody></table></div>';
+                
+                if (Object.keys(fieldStats).length === 0) {
+                    html = '<p style="text-align: center; color: #999;">Nenhum campo comum encontrado.</p>';
+                }
+                
+                analysisDiv.innerHTML = html;
+            }, 300);
+        }
+
+        function quickBulkEdit(fieldName, currentValue) {
+            const fieldMap = {
+                'CNES': 'contratado.cnes',
+                'CNPJ Prestador': 'contratado.cnpj',
+                'CPF Prestador': 'contratado.cpf',
+                'Nome Prestador': 'contratado.nome',
+                'Código Prestador': 'contratado.codPrest',
+                'Conselho Médico': 'medico.conselho',
+                'Indicação Acidente': 'guia.indicacaoAcidente'
+            };
+
+            document.getElementById('bulkFieldSelect').value = fieldMap[fieldName] || '';
+            document.getElementById('bulkOldValue').value = currentValue;
+            document.getElementById('bulkNewValue').value = '';
+            document.getElementById('bulkOperationType').value = 'replace';
+            updateBulkFieldInfo();
+            document.getElementById('bulkNewValue').focus();
+        }
+
+        function updateBulkFieldInfo() {
+            const field = document.getElementById('bulkFieldSelect').value;
+            const infoDiv = document.getElementById('bulkFieldInfo');
+            const valuesDiv = document.getElementById('bulkFieldValues');
+
+            if (!field) {
+                infoDiv.classList.add('hidden');
+                return;
+            }
+
+            infoDiv.classList.remove('hidden');
+            const values = new Map();
+
+            allGuiasElements.forEach(guia => {
+                const value = getFieldValue(guia, field);
+                if (value) {
+                    values.set(value, (values.get(value) || 0) + 1);
+                }
+            });
+
+            let html = '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
+            Array.from(values.entries())
+                .sort((a, b) => b[1] - a[1])
+                .forEach(([value, count]) => {
+                    html += `
+                        <div style="background: #e8f5e9; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;" 
+                             onclick="document.getElementById('bulkOldValue').value=\`${value.replace(/`/g, '\\`')}\`" 
+                             title="Clique para usar este valor">
+                            <strong>${value}</strong> <span style="color: #666;">(${count})</span>
+                        </div>
+                    `;
+                });
+            html += '</div>';
+
+            valuesDiv.innerHTML = html;
+        }
+
+        function updateBulkOperationUI() {
+            const opType = document.getElementById('bulkOperationType').value;
+            
+            if (opType === 'replaceAll' || opType === 'replaceEmpty') {
+                document.getElementById('bulkOldValue').parentElement.style.display = 'none';
+            } else {
+                document.getElementById('bulkOldValue').parentElement.style.display = '';
+            }
+        }
+
+        function getFieldValue(guia, fieldPath) {
+            const selectors = {
+                'contratado.cnes': 'ptu\\:CNES, CNES',
+                'contratado.cnpj': 'ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cnpj, contratadoExecutante CPF_CNPJ cd_cnpj',
+                'contratado.cpf': 'ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cpf, contratadoExecutante CPF_CNPJ cd_cpf',
+                'contratado.nome': 'ptu\\:contratadoExecutante ptu\\:nome, contratadoExecutante nome',
+                'contratado.codPrest': 'ptu\\:contratadoExecutante ptu\\:UnimedPrestador ptu\\:cd_Prest, contratadoExecutante UnimedPrestador cd_Prest',
+                'medico.nome': 'ptu\\:profissionalExecutante ptu\\:nome, profissionalExecutante nome',
+                'medico.conselho': 'ptu\\:profissionalExecutante ptu\\:conselhoProfissional, profissionalExecutante conselhoProfissional',
+                'guia.indicacaoAcidente': 'ptu\\:dadosGuia ptu\\:in_AcidTrab, dadosGuia in_AcidTrab'
+            };
+
+            return guia.querySelector(selectors[fieldPath])?.textContent;
+        }
+
+        function setFieldValue(guia, fieldPath, newValue) {
+            const nsURI = guia.namespaceURI || guia.lookupNamespaceURI('ptu') || '';
+            const prefix = guia.prefix || 'ptu';
+
+            function getOrCreateElement(parent, tagName) {
+                const existing = parent.querySelector(`ptu\\:${tagName}, ${tagName}`);
+                if (existing) return existing;
+                
+                const newEl = nsURI 
+                    ? xmlDoc.createElementNS(nsURI, `${prefix}:${tagName}`)
+                    : xmlDoc.createElement(tagName);
+                parent.appendChild(newEl);
+                return newEl;
+            }
+
+            const handlers = {
+                'contratado.cnes': () => {
+                    const exec = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
+                    if (exec) getOrCreateElement(exec, 'CNES').textContent = newValue;
+                },
+                'contratado.codPrest': () => {
+                    const exec = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
+                    if (exec) {
+                        const unimedPrest = getOrCreateElement(exec, 'UnimedPrestador');
+                        getOrCreateElement(unimedPrest, 'cd_Prest').textContent = newValue;
+                    }
+                },
+                'medico.conselho': () => {
+                    const prof = guia.querySelector('ptu\\:profissionalExecutante, profissionalExecutante');
+                    if (prof) getOrCreateElement(prof, 'conselhoProfissional').textContent = newValue;
+                },
+                'guia.indicacaoAcidente': () => {
+                    const dados = guia.querySelector('ptu\\:dadosGuia, dadosGuia');
+                    if (dados) getOrCreateElement(dados, 'in_AcidTrab').textContent = newValue;
+                }
+            };
+
+            if (handlers[fieldPath]) {
+                handlers[fieldPath]();
+            }
+        }
+
+        function executeBulkEdit(previewOnly) {
+            const field = document.getElementById('bulkFieldSelect').value;
+            const opType = document.getElementById('bulkOperationType').value;
+            const oldValue = document.getElementById('bulkOldValue').value.trim();
+            const newValue = document.getElementById('bulkNewValue').value.trim();
+
+            if (!field) {
+                showNotification('Selecione um campo!', 'warning');
+                return;
+            }
+
+            if (!newValue && opType !== 'addPrefix' && opType !== 'addSuffix') {
+                showNotification('Informe o novo valor!', 'warning');
+                return;
+            }
+
+            bulkEditResults = [];
+            let modifiedCount = 0;
+
+            allGuiasElements.forEach((guia, index) => {
+                const nrGuias = guia.querySelector('ptu\\:nr_Guias, nr_Guias');
+                const numeroGuia = nrGuias?.querySelector('ptu\\:nr_GuiaTissPrestador, nr_GuiaTissPrestador')?.textContent || 'N/A';
+                
+                const currentValue = getFieldValue(guia, field);
+                let shouldModify = false;
+                let finalValue = newValue;
+
+                switch (opType) {
+                    case 'replace':
+                        shouldModify = currentValue === oldValue || (!oldValue && currentValue);
+                        break;
+                    case 'replaceAll':
+                        shouldModify = true;
+                        break;
+                    case 'replaceEmpty':
+                        shouldModify = !currentValue || currentValue.trim() === '';
+                        break;
+                    case 'addPrefix':
+                        shouldModify = currentValue && currentValue.trim() !== '';
+                        finalValue = newValue + currentValue;
+                        break;
+                    case 'addSuffix':
+                        shouldModify = currentValue && currentValue.trim() !== '';
+                        finalValue = currentValue + newValue;
+                        break;
+                }
+
+                if (shouldModify) {
+                    bulkEditResults.push({
+                        guiaIndex: index,
+                        numeroGuia,
+                        field,
+                        oldValue: currentValue || '(vazio)',
+                        newValue: finalValue
+                    });
+
+                    if (!previewOnly) {
+                        setFieldValue(guia, field, finalValue);
+                    }
+
+                    modifiedCount++;
+                }
+            });
+
+            if (previewOnly) {
+                showBulkPreview();
+            } else {
+                showNotification(`${modifiedCount} guia(s) foram modificadas com sucesso!`, 'success');
+                closeModal('modalBulkEdit');
+                processXML();
+            }
+        }
+
+        function showBulkPreview() {
+            const previewDiv = document.getElementById('bulkPreviewResults');
+            const contentDiv = document.getElementById('bulkPreviewContent');
+
+            if (bulkEditResults.length === 0) {
+                contentDiv.innerHTML = '<p style="text-align: center; color: #999;">Nenhuma alteração será feita com os critérios atuais.</p>';
+                previewDiv.classList.remove('hidden');
+                document.getElementById('bulkApplyBtn').disabled = true;
+                return;
+            }
+
+            let html = `
+                <div class="alert-box alert-info" style="margin-bottom: 15px;">
+                    <strong>📊 Total de alterações: ${bulkEditResults.length} guia(s)</strong>
+                </div>
+                <table style="width: 100%; font-size: 12px;">
+                    <thead>
+                        <tr style="background: var(--primary); color: white;">
+                            <th style="padding: 8px;">Nº Guia</th>
+                            <th style="padding: 8px;">Valor Atual</th>
+                            <th style="padding: 8px;">➡️</th>
+                            <th style="padding: 8px;">Novo Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            bulkEditResults.slice(0, 50).forEach(result => {
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 8px;"><strong>${result.numeroGuia}</strong></td>
+                        <td style="padding: 8px; color: var(--danger);">${result.oldValue}</td>
+                        <td style="padding: 8px; text-align: center;">➡️</td>
+                        <td style="padding: 8px; color: var(--success);"><strong>${result.newValue}</strong></td>
+                    </tr>
+                `;
+            });
+
+            if (bulkEditResults.length > 50) {
+                html += `
+                    <tr>
+                        <td colspan="4" style="padding: 15px; text-align: center; color: #666; font-style: italic;">
+                            ... e mais ${bulkEditResults.length - 50} guia(s)
+                        </td>
+                    </tr>
+                `;
+            }
+
+            html += '</tbody></table>';
+            contentDiv.innerHTML = html;
+            previewDiv.classList.remove('hidden');
+            document.getElementById('bulkApplyBtn').disabled = false;
+        }
+
+        // ========================================
+        // UTILITÁRIOS
+        // ========================================
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showNotification(message, type = 'info') {
+            const colors = {
+                success: 'var(--success)',
+                error: 'var(--danger)',
+                warning: 'var(--warning)',
+                info: 'var(--info)'
+            };
+
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${colors[type]};
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                max-width: 400px;
+                font-weight: 600;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Event listeners
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            });
+        });
+
+        document.getElementById('clinicCodeInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') confirmFix();
+        });
+
+        window.addEventListener('load', function() {
+            const guiaInput = document.getElementById('guiaSearchInput');
+            if (guiaInput) {
+                guiaInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        filterByGuia();
+                    }
+                });
+            }
+
+            const guiaNumeroInput = document.getElementById('guiaNumeroInput');
+            if (guiaNumeroInput) {
+                guiaNumeroInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchGuiaInTab();
+                    }
+                });
+            }
+        });
+
+        // ========================================
+        // ANIMAÇÕES CSS
+        // ========================================
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // INICIALIZAÇÃO
+        loadDatabase();
+        console.log('✓ Corretor XML v6 Otimizado carregado com sucesso!');
+    </script>
+</body>
+</html>
