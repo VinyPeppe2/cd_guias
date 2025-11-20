@@ -2711,327 +2711,502 @@
         // ========================================
         // EDIÇÃO EM MASSA
         // ========================================
-        let bulkEditResults = [];
+            // ========================================
+// EDIÇÃO EM MASSA - CORRIGIDO
+// ========================================
+// ========================================
+// EDIÇÃO EM MASSA - SOLUÇÃO DEFINITIVA
+// ========================================
+let bulkEditResults = [];
 
-        function openBulkEditModal() {
-            if (!xmlDoc || allGuiasElements.length === 0) {
-                showNotification('Carregue um XML primeiro!', 'warning');
-                return;
-            }
-            document.getElementById('modalBulkEdit').classList.add('active');
-            document.getElementById('bulkAnalysisResults').innerHTML = '';
-            document.getElementById('bulkPreviewResults').classList.add('hidden');
-            document.getElementById('bulkApplyBtn').disabled = true;
-            bulkEditResults = [];
-        }
+function openBulkEditModal() {
+    if (!xmlDoc || allGuiasElements.length === 0) {
+        showNotification('Carregue um XML primeiro!', 'warning');
+        return;
+    }
+    document.getElementById('modalBulkEdit').classList.add('active');
+    document.getElementById('bulkAnalysisResults').innerHTML = '';
+    document.getElementById('bulkPreviewResults').classList.add('hidden');
+    document.getElementById('bulkApplyBtn').disabled = true;
+    bulkEditResults = [];
+}
 
-        function analyzeBulkFields() {
-            const analysisDiv = document.getElementById('bulkAnalysisResults');
-            analysisDiv.innerHTML = '<div class="spinner"></div><p style="text-align: center; color: #666;">Analisando...</p>';
+function analyzeBulkFields() {
+    const analysisDiv = document.getElementById('bulkAnalysisResults');
+    analysisDiv.innerHTML = '<div class="spinner"></div><p style="text-align: center; color: #666;">Analisando...</p>';
 
-            setTimeout(() => {
-                const fieldStats = {};
-                
-                allGuiasElements.forEach(guia => {
-                    const fields = {
-                        'CNES': guia.querySelector('ptu\\:CNES, CNES')?.textContent,
-                        'CNPJ Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cnpj, contratadoExecutante CPF_CNPJ cd_cnpj')?.textContent,
-                        'CPF Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cpf, contratadoExecutante CPF_CNPJ cd_cpf')?.textContent,
-                        'Nome Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:nome, contratadoExecutante nome')?.textContent,
-                        'Código Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:UnimedPrestador ptu\\:cd_Prest, contratadoExecutante UnimedPrestador cd_Prest')?.textContent,
-                        'Conselho Médico': guia.querySelector('ptu\\:profissionalExecutante ptu\\:conselhoProfissional, profissionalExecutante conselhoProfissional')?.textContent,
-                        'Indicação Acidente': guia.querySelector('ptu\\:dadosGuia ptu\\:in_AcidTrab, dadosGuia in_AcidTrab')?.textContent
-                    };
-
-                    for (const [label, value] of Object.entries(fields)) {
-                        if (value) {
-                            if (!fieldStats[label]) fieldStats[label] = {};
-                            fieldStats[label][value] = (fieldStats[label][value] || 0) + 1;
-                        }
-                    }
-                });
-
-                let html = '<div class="table-container" style="max-height: 400px;"><table><thead><tr><th>Campo</th><th>Valor</th><th>Quantidade</th><th>Ação</th></tr></thead><tbody>';
-                
-                for (const [field, values] of Object.entries(fieldStats)) {
-                    const sortedValues = Object.entries(values).sort((a, b) => b[1] - a[1]);
-                    sortedValues.forEach(([value, count]) => {
-                        const percentage = ((count / allGuiasElements.length) * 100).toFixed(1);
-                        html += `
-                            <tr>
-                                <td><strong>${field}</strong></td>
-                                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${value}</td>
-                                <td><span class="status-badge info">${count} guias (${percentage}%)</span></td>
-                                <td>
-                                    <button class="btn-table btn-edit" onclick="quickBulkEdit('${field}', \`${value.replace(/`/g, '\\`')}\`)">
-                                        ✏️ Editar
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                }
-                
-                html += '</tbody></table></div>';
-                
-                if (Object.keys(fieldStats).length === 0) {
-                    html = '<p style="text-align: center; color: #999;">Nenhum campo comum encontrado.</p>';
-                }
-                
-                analysisDiv.innerHTML = html;
-            }, 300);
-        }
-
-        function quickBulkEdit(fieldName, currentValue) {
-            const fieldMap = {
-                'CNES': 'contratado.cnes',
-                'CNPJ Prestador': 'contratado.cnpj',
-                'CPF Prestador': 'contratado.cpf',
-                'Nome Prestador': 'contratado.nome',
-                'Código Prestador': 'contratado.codPrest',
-                'Conselho Médico': 'medico.conselho',
-                'Indicação Acidente': 'guia.indicacaoAcidente'
+    setTimeout(() => {
+        const fieldStats = {};
+        
+        allGuiasElements.forEach(guia => {
+            const fields = {
+                'CNES': guia.querySelector('ptu\\:CNES, CNES')?.textContent,
+                'CNPJ Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cnpj, contratadoExecutante CPF_CNPJ cd_cnpj')?.textContent,
+                'CPF Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cpf, contratadoExecutante CPF_CNPJ cd_cpf')?.textContent,
+                'Nome Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:nome, contratadoExecutante nome')?.textContent,
+                'Código Prestador': guia.querySelector('ptu\\:contratadoExecutante ptu\\:UnimedPrestador ptu\\:cd_Prest, contratadoExecutante UnimedPrestador cd_Prest')?.textContent,
+                'Conselho Médico': guia.querySelector('ptu\\:profissionalExecutante ptu\\:conselhoProfissional, profissionalExecutante conselhoProfissional')?.textContent,
+                'Indicação Acidente': guia.querySelector('ptu\\:dadosGuia ptu\\:in_AcidTrab, dadosGuia in_AcidTrab')?.textContent
             };
 
-            document.getElementById('bulkFieldSelect').value = fieldMap[fieldName] || '';
-            document.getElementById('bulkOldValue').value = currentValue;
-            document.getElementById('bulkNewValue').value = '';
-            document.getElementById('bulkOperationType').value = 'replace';
-            updateBulkFieldInfo();
-            document.getElementById('bulkNewValue').focus();
-        }
-
-        function updateBulkFieldInfo() {
-            const field = document.getElementById('bulkFieldSelect').value;
-            const infoDiv = document.getElementById('bulkFieldInfo');
-            const valuesDiv = document.getElementById('bulkFieldValues');
-
-            if (!field) {
-                infoDiv.classList.add('hidden');
-                return;
-            }
-
-            infoDiv.classList.remove('hidden');
-            const values = new Map();
-
-            allGuiasElements.forEach(guia => {
-                const value = getFieldValue(guia, field);
+            for (const [label, value] of Object.entries(fields)) {
                 if (value) {
-                    values.set(value, (values.get(value) || 0) + 1);
+                    if (!fieldStats[label]) fieldStats[label] = {};
+                    fieldStats[label][value] = (fieldStats[label][value] || 0) + 1;
                 }
-            });
-
-            let html = '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
-            Array.from(values.entries())
-                .sort((a, b) => b[1] - a[1])
-                .forEach(([value, count]) => {
-                    html += `
-                        <div style="background: #e8f5e9; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;" 
-                             onclick="document.getElementById('bulkOldValue').value=\`${value.replace(/`/g, '\\`')}\`" 
-                             title="Clique para usar este valor">
-                            <strong>${value}</strong> <span style="color: #666;">(${count})</span>
-                        </div>
-                    `;
-                });
-            html += '</div>';
-
-            valuesDiv.innerHTML = html;
-        }
-
-        function updateBulkOperationUI() {
-            const opType = document.getElementById('bulkOperationType').value;
-            
-            if (opType === 'replaceAll' || opType === 'replaceEmpty') {
-                document.getElementById('bulkOldValue').parentElement.style.display = 'none';
-            } else {
-                document.getElementById('bulkOldValue').parentElement.style.display = '';
             }
-        }
+        });
 
-        function getFieldValue(guia, fieldPath) {
-            const selectors = {
-                'contratado.cnes': 'ptu\\:CNES, CNES',
-                'contratado.cnpj': 'ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cnpj, contratadoExecutante CPF_CNPJ cd_cnpj',
-                'contratado.cpf': 'ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cpf, contratadoExecutante CPF_CNPJ cd_cpf',
-                'contratado.nome': 'ptu\\:contratadoExecutante ptu\\:nome, contratadoExecutante nome',
-                'contratado.codPrest': 'ptu\\:contratadoExecutante ptu\\:UnimedPrestador ptu\\:cd_Prest, contratadoExecutante UnimedPrestador cd_Prest',
-                'medico.nome': 'ptu\\:profissionalExecutante ptu\\:nome, profissionalExecutante nome',
-                'medico.conselho': 'ptu\\:profissionalExecutante ptu\\:conselhoProfissional, profissionalExecutante conselhoProfissional',
-                'guia.indicacaoAcidente': 'ptu\\:dadosGuia ptu\\:in_AcidTrab, dadosGuia in_AcidTrab'
-            };
-
-            return guia.querySelector(selectors[fieldPath])?.textContent;
-        }
-
-        function setFieldValue(guia, fieldPath, newValue) {
-            const nsURI = guia.namespaceURI || guia.lookupNamespaceURI('ptu') || '';
-            const prefix = guia.prefix || 'ptu';
-
-            function getOrCreateElement(parent, tagName) {
-                const existing = parent.querySelector(`ptu\\:${tagName}, ${tagName}`);
-                if (existing) return existing;
-                
-                const newEl = nsURI 
-                    ? xmlDoc.createElementNS(nsURI, `${prefix}:${tagName}`)
-                    : xmlDoc.createElement(tagName);
-                parent.appendChild(newEl);
-                return newEl;
-            }
-
-            const handlers = {
-                'contratado.cnes': () => {
-                    const exec = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
-                    if (exec) getOrCreateElement(exec, 'CNES').textContent = newValue;
-                },
-                'contratado.codPrest': () => {
-                    const exec = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
-                    if (exec) {
-                        const unimedPrest = getOrCreateElement(exec, 'UnimedPrestador');
-                        getOrCreateElement(unimedPrest, 'cd_Prest').textContent = newValue;
-                    }
-                },
-                'medico.conselho': () => {
-                    const prof = guia.querySelector('ptu\\:profissionalExecutante, profissionalExecutante');
-                    if (prof) getOrCreateElement(prof, 'conselhoProfissional').textContent = newValue;
-                },
-                'guia.indicacaoAcidente': () => {
-                    const dados = guia.querySelector('ptu\\:dadosGuia, dadosGuia');
-                    if (dados) getOrCreateElement(dados, 'in_AcidTrab').textContent = newValue;
-                }
-            };
-
-            if (handlers[fieldPath]) {
-                handlers[fieldPath]();
-            }
-        }
-
-        function executeBulkEdit(previewOnly) {
-            const field = document.getElementById('bulkFieldSelect').value;
-            const opType = document.getElementById('bulkOperationType').value;
-            const oldValue = document.getElementById('bulkOldValue').value.trim();
-            const newValue = document.getElementById('bulkNewValue').value.trim();
-
-            if (!field) {
-                showNotification('Selecione um campo!', 'warning');
-                return;
-            }
-
-            if (!newValue && opType !== 'addPrefix' && opType !== 'addSuffix') {
-                showNotification('Informe o novo valor!', 'warning');
-                return;
-            }
-
-            bulkEditResults = [];
-            let modifiedCount = 0;
-
-            allGuiasElements.forEach((guia, index) => {
-                const nrGuias = guia.querySelector('ptu\\:nr_Guias, nr_Guias');
-                const numeroGuia = nrGuias?.querySelector('ptu\\:nr_GuiaTissPrestador, nr_GuiaTissPrestador')?.textContent || 'N/A';
-                
-                const currentValue = getFieldValue(guia, field);
-                let shouldModify = false;
-                let finalValue = newValue;
-
-                switch (opType) {
-                    case 'replace':
-                        shouldModify = currentValue === oldValue || (!oldValue && currentValue);
-                        break;
-                    case 'replaceAll':
-                        shouldModify = true;
-                        break;
-                    case 'replaceEmpty':
-                        shouldModify = !currentValue || currentValue.trim() === '';
-                        break;
-                    case 'addPrefix':
-                        shouldModify = currentValue && currentValue.trim() !== '';
-                        finalValue = newValue + currentValue;
-                        break;
-                    case 'addSuffix':
-                        shouldModify = currentValue && currentValue.trim() !== '';
-                        finalValue = currentValue + newValue;
-                        break;
-                }
-
-                if (shouldModify) {
-                    bulkEditResults.push({
-                        guiaIndex: index,
-                        numeroGuia,
-                        field,
-                        oldValue: currentValue || '(vazio)',
-                        newValue: finalValue
-                    });
-
-                    if (!previewOnly) {
-                        setFieldValue(guia, field, finalValue);
-                    }
-
-                    modifiedCount++;
-                }
-            });
-
-            if (previewOnly) {
-                showBulkPreview();
-            } else {
-                showNotification(`${modifiedCount} guia(s) foram modificadas com sucesso!`, 'success');
-                closeModal('modalBulkEdit');
-                processXML();
-            }
-        }
-
-        function showBulkPreview() {
-            const previewDiv = document.getElementById('bulkPreviewResults');
-            const contentDiv = document.getElementById('bulkPreviewContent');
-
-            if (bulkEditResults.length === 0) {
-                contentDiv.innerHTML = '<p style="text-align: center; color: #999;">Nenhuma alteração será feita com os critérios atuais.</p>';
-                previewDiv.classList.remove('hidden');
-                document.getElementById('bulkApplyBtn').disabled = true;
-                return;
-            }
-
-            let html = `
-                <div class="alert-box alert-info" style="margin-bottom: 15px;">
-                    <strong>📊 Total de alterações: ${bulkEditResults.length} guia(s)</strong>
-                </div>
-                <table style="width: 100%; font-size: 12px;">
-                    <thead>
-                        <tr style="background: var(--primary); color: white;">
-                            <th style="padding: 8px;">Nº Guia</th>
-                            <th style="padding: 8px;">Valor Atual</th>
-                            <th style="padding: 8px;">➡️</th>
-                            <th style="padding: 8px;">Novo Valor</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            bulkEditResults.slice(0, 50).forEach(result => {
-                html += `
-                    <tr style="border-bottom: 1px solid var(--border);">
-                        <td style="padding: 8px;"><strong>${result.numeroGuia}</strong></td>
-                        <td style="padding: 8px; color: var(--danger);">${result.oldValue}</td>
-                        <td style="padding: 8px; text-align: center;">➡️</td>
-                        <td style="padding: 8px; color: var(--success);"><strong>${result.newValue}</strong></td>
-                    </tr>
-                `;
-            });
-
-            if (bulkEditResults.length > 50) {
+        let html = '<div class="table-container" style="max-height: 400px;"><table><thead><tr><th>Campo</th><th>Valor</th><th>Quantidade</th><th>Ação</th></tr></thead><tbody>';
+        
+        for (const [field, values] of Object.entries(fieldStats)) {
+            const sortedValues = Object.entries(values).sort((a, b) => b[1] - a[1]);
+            sortedValues.forEach(([value, count]) => {
+                const percentage = ((count / allGuiasElements.length) * 100).toFixed(1);
                 html += `
                     <tr>
-                        <td colspan="4" style="padding: 15px; text-align: center; color: #666; font-style: italic;">
-                            ... e mais ${bulkEditResults.length - 50} guia(s)
+                        <td><strong>${field}</strong></td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${value}</td>
+                        <td><span class="status-badge info">${count} guias (${percentage}%)</span></td>
+                        <td>
+                            <button class="btn-table btn-edit" onclick="quickBulkEdit('${field}', \`${value.replace(/`/g, '\\`')}\`)">
+                                ✏️ Editar
+                            </button>
                         </td>
                     </tr>
                 `;
+            });
+        }
+        
+        html += '</tbody></table></div>';
+        
+        if (Object.keys(fieldStats).length === 0) {
+            html = '<p style="text-align: center; color: #999;">Nenhum campo comum encontrado.</p>';
+        }
+        
+        analysisDiv.innerHTML = html;
+    }, 300);
+}
+
+function quickBulkEdit(fieldName, currentValue) {
+    const fieldMap = {
+        'CNES': 'contratado.cnes',
+        'CNPJ Prestador': 'contratado.cnpj',
+        'CPF Prestador': 'contratado.cpf',
+        'Nome Prestador': 'contratado.nome',
+        'Código Prestador': 'contratado.codPrest',
+        'Conselho Médico': 'medico.conselho',
+        'Indicação Acidente': 'guia.indicacaoAcidente'
+    };
+
+    document.getElementById('bulkFieldSelect').value = fieldMap[fieldName] || '';
+    document.getElementById('bulkOldValue').value = currentValue;
+    document.getElementById('bulkNewValue').value = '';
+    document.getElementById('bulkOperationType').value = 'replace';
+    updateBulkFieldInfo();
+    document.getElementById('bulkNewValue').focus();
+}
+
+function updateBulkFieldInfo() {
+    const field = document.getElementById('bulkFieldSelect').value;
+    const infoDiv = document.getElementById('bulkFieldInfo');
+    const valuesDiv = document.getElementById('bulkFieldValues');
+
+    if (!field) {
+        infoDiv.classList.add('hidden');
+        return;
+    }
+
+    infoDiv.classList.remove('hidden');
+    const values = new Map();
+
+    allGuiasElements.forEach(guia => {
+        const value = getFieldValue(guia, field);
+        if (value) {
+            values.set(value, (values.get(value) || 0) + 1);
+        }
+    });
+
+    let html = '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
+    Array.from(values.entries())
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([value, count]) => {
+            html += `
+                <div style="background: #e8f5e9; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;" 
+                     onclick="document.getElementById('bulkOldValue').value=\`${value.replace(/`/g, '\\`')}\`" 
+                     title="Clique para usar este valor">
+                    <strong>${value}</strong> <span style="color: #666;">(${count})</span>
+                </div>
+            `;
+        });
+    html += '</div>';
+
+    valuesDiv.innerHTML = html;
+}
+
+function updateBulkOperationUI() {
+    const opType = document.getElementById('bulkOperationType').value;
+    
+    if (opType === 'replaceAll' || opType === 'replaceEmpty') {
+        document.getElementById('bulkOldValue').parentElement.style.display = 'none';
+    } else {
+        document.getElementById('bulkOldValue').parentElement.style.display = '';
+    }
+}
+
+function getFieldValue(guia, fieldPath) {
+    const selectors = {
+        'contratado.cnes': 'ptu\\:contratadoExecutante ptu\\:CNES, contratadoExecutante CNES',
+        'contratado.cnpj': 'ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cnpj, contratadoExecutante CPF_CNPJ cd_cnpj',
+        'contratado.cpf': 'ptu\\:contratadoExecutante ptu\\:CPF_CNPJ ptu\\:cd_cpf, contratadoExecutante CPF_CNPJ cd_cpf',
+        'contratado.nome': 'ptu\\:contratadoExecutante ptu\\:nome, contratadoExecutante nome',
+        'contratado.codPrest': 'ptu\\:contratadoExecutante ptu\\:UnimedPrestador ptu\\:cd_Prest, contratadoExecutante UnimedPrestador cd_Prest',
+        'medico.nome': 'ptu\\:profissionalExecutante ptu\\:nome, profissionalExecutante nome',
+        'medico.conselho': 'ptu\\:profissionalExecutante ptu\\:conselhoProfissional, profissionalExecutante conselhoProfissional',
+        'medico.numeroConselho': 'ptu\\:profissionalExecutante ptu\\:nr_Seq_Cnh, profissionalExecutante nr_Seq_Cnh',
+        'medico.uf': 'ptu\\:profissionalExecutante ptu\\:sg_UF_Cnh, profissionalExecutante sg_UF_Cnh',
+        'medico.cbo': 'ptu\\:profissionalExecutante ptu\\:cd_CBO, profissionalExecutante cd_CBO',
+        'guia.dataAtendimento': 'ptu\\:dadosGuia ptu\\:dt_Atendimento, dadosGuia dt_Atendimento',
+        'guia.indicacaoAcidente': 'ptu\\:dadosGuia ptu\\:in_AcidTrab, dadosGuia in_AcidTrab',
+        'guia.tipoConsulta': 'ptu\\:dadosGuia ptu\\:tp_Consulta, dadosGuia tp_Consulta'
+    };
+
+    const element = guia.querySelector(selectors[fieldPath]);
+    return element?.textContent || null;
+}
+
+// FUNÇÃO COMPLETAMENTE REESCRITA
+function setFieldValue(guia, fieldPath, newValue) {
+    if (!guia || !fieldPath || newValue === null || newValue === undefined) {
+        console.error('Parâmetros inválidos para setFieldValue');
+        return false;
+    }
+
+    const nsURI = guia.namespaceURI || guia.lookupNamespaceURI('ptu') || '';
+    const prefix = guia.prefix || 'ptu';
+
+    console.log(`Modificando guia: campo=${fieldPath}, novo valor=${newValue}`);
+
+    // Função para criar elemento com namespace correto
+    function createElement(tagName) {
+        if (nsURI) {
+            return xmlDoc.createElementNS(nsURI, `${prefix}:${tagName}`);
+        }
+        return xmlDoc.createElement(tagName);
+    }
+
+    // Função para buscar ou criar elemento filho direto
+    function findOrCreateChild(parent, tagName) {
+        // Busca entre os filhos diretos
+        for (let i = 0; i < parent.childNodes.length; i++) {
+            const child = parent.childNodes[i];
+            if (child.nodeType === 1) { // Element
+                const childName = child.localName || child.tagName.replace(/^ptu:/, '');
+                if (childName === tagName) {
+                    return child;
+                }
+            }
+        }
+        
+        // Cria se não encontrou
+        const newElement = createElement(tagName);
+        parent.appendChild(newElement);
+        return newElement;
+    }
+
+    try {
+        switch (fieldPath) {
+            case 'contratado.cnes': {
+                const exec = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
+                if (!exec) {
+                    console.error('contratadoExecutante não encontrado');
+                    return false;
+                }
+                const cnesEl = findOrCreateChild(exec, 'CNES');
+                cnesEl.textContent = newValue;
+                console.log(`✓ CNES modificado para: ${newValue}`);
+                return true;
             }
 
-            html += '</tbody></table>';
-            contentDiv.innerHTML = html;
-            previewDiv.classList.remove('hidden');
-            document.getElementById('bulkApplyBtn').disabled = false;
+            case 'contratado.cnpj': {
+                const exec = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
+                if (!exec) return false;
+                const cpfCnpj = findOrCreateChild(exec, 'CPF_CNPJ');
+                const cnpjEl = findOrCreateChild(cpfCnpj, 'cd_cnpj');
+                cnpjEl.textContent = newValue;
+                console.log(`✓ CNPJ modificado para: ${newValue}`);
+                return true;
+            }
+
+            case 'contratado.cpf': {
+                const exec = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
+                if (!exec) return false;
+                const cpfCnpj = findOrCreateChild(exec, 'CPF_CNPJ');
+                const cpfEl = findOrCreateChild(cpfCnpj, 'cd_cpf');
+                cpfEl.textContent = newValue;
+                console.log(`✓ CPF modificado para: ${newValue}`);
+                return true;
+            }
+
+            case 'contratado.nome': {
+                const exec = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
+                if (!exec) return false;
+                const nomeEl = findOrCreateChild(exec, 'nome');
+                nomeEl.textContent = newValue;
+                console.log(`✓ Nome prestador modificado para: ${newValue}`);
+                return true;
+            }
+
+            case 'contratado.codPrest': {
+                const exec = guia.querySelector('ptu\\:contratadoExecutante, contratadoExecutante');
+                if (!exec) return false;
+                
+                const unimedPrest = findOrCreateChild(exec, 'UnimedPrestador');
+                
+                // Garante cd_Uni_Prest = 262
+                const cdUniPrest = findOrCreateChild(unimedPrest, 'cd_Uni_Prest');
+                if (!cdUniPrest.textContent || cdUniPrest.textContent.trim() === '') {
+                    cdUniPrest.textContent = '262';
+                }
+                
+                // Modifica cd_Prest
+                const cdPrest = findOrCreateChild(unimedPrest, 'cd_Prest');
+                cdPrest.textContent = newValue;
+                console.log(`✓ Código prestador modificado para: ${newValue}`);
+                return true;
+            }
+
+            case 'medico.nome': {
+                const prof = guia.querySelector('ptu\\:profissionalExecutante, profissionalExecutante');
+                if (!prof) return false;
+                const nomeEl = findOrCreateChild(prof, 'nome');
+                nomeEl.textContent = newValue;
+                console.log(`✓ Nome médico modificado para: ${newValue}`);
+                return true;
+            }
+
+            case 'medico.conselho': {
+                const prof = guia.querySelector('ptu\\:profissionalExecutante, profissionalExecutante');
+                if (!prof) return false;
+                const conselhoEl = findOrCreateChild(prof, 'conselhoProfissional');
+                conselhoEl.textContent = newValue;
+                console.log(`✓ Conselho modificado para: ${newValue}`);
+                return true;
+            }
+
+            case 'medico.numeroConselho': {
+                const prof = guia.querySelector('ptu\\:profissionalExecutante, profissionalExecutante');
+                if (!prof) return false;
+                const nrEl = findOrCreateChild(prof, 'nr_Seq_Cnh');
+                nrEl.textContent = newValue;
+                console.log(`✓ Número conselho modificado para: ${newValue}`);
+                return true;
+            }
+
+            case 'medico.uf': {
+                const prof = guia.querySelector('ptu\\:profissionalExecutante, profissionalExecutante');
+                if (!prof) return false;
+                const ufEl = findOrCreateChild(prof, 'sg_UF_Cnh');
+                ufEl.textContent = newValue;
+                console.log(`✓ UF modificada para: ${newValue}`);
+                return true;
+            }
+
+            case 'medico.cbo': {
+                const prof = guia.querySelector('ptu\\:profissionalExecutante, profissionalExecutante');
+                if (!prof) return false;
+                const cboEl = findOrCreateChild(prof, 'cd_CBO');
+                cboEl.textContent = newValue;
+                console.log(`✓ CBO modificado para: ${newValue}`);
+                return true;
+            }
+
+            case 'guia.dataAtendimento': {
+                const dados = guia.querySelector('ptu\\:dadosGuia, dadosGuia');
+                if (!dados) return false;
+                const dataEl = findOrCreateChild(dados, 'dt_Atendimento');
+                dataEl.textContent = newValue;
+                console.log(`✓ Data atendimento modificada para: ${newValue}`);
+                return true;
+            }
+
+            case 'guia.indicacaoAcidente': {
+                const dados = guia.querySelector('ptu\\:dadosGuia, dadosGuia');
+                if (!dados) return false;
+                const acidEl = findOrCreateChild(dados, 'in_AcidTrab');
+                acidEl.textContent = newValue;
+                console.log(`✓ Indicação acidente modificada para: ${newValue}`);
+                return true;
+            }
+
+            case 'guia.tipoConsulta': {
+                const dados = guia.querySelector('ptu\\:dadosGuia, dadosGuia');
+                if (!dados) return false;
+                const tipoEl = findOrCreateChild(dados, 'tp_Consulta');
+                tipoEl.textContent = newValue;
+                console.log(`✓ Tipo consulta modificado para: ${newValue}`);
+                return true;
+            }
+
+            default:
+                console.error(`Campo não suportado: ${fieldPath}`);
+                return false;
+        }
+    } catch (error) {
+        console.error(`Erro ao modificar ${fieldPath}:`, error);
+        return false;
+    }
+}
+
+function executeBulkEdit(previewOnly) {
+    const field = document.getElementById('bulkFieldSelect').value;
+    const opType = document.getElementById('bulkOperationType').value;
+    const oldValue = document.getElementById('bulkOldValue').value.trim();
+    const newValue = document.getElementById('bulkNewValue').value.trim();
+
+    if (!field) {
+        showNotification('Selecione um campo!', 'warning');
+        return;
+    }
+
+    if (!newValue && opType !== 'addPrefix' && opType !== 'addSuffix') {
+        showNotification('Informe o novo valor!', 'warning');
+        return;
+    }
+
+    bulkEditResults = [];
+    let successCount = 0;
+    let failCount = 0;
+
+    console.log(`=== INICIANDO EDIÇÃO EM MASSA ===`);
+    console.log(`Campo: ${field}`);
+    console.log(`Operação: ${opType}`);
+    console.log(`Valor antigo: ${oldValue || '(qualquer)'}`);
+    console.log(`Valor novo: ${newValue}`);
+    console.log(`Total de guias: ${allGuiasElements.length}`);
+
+    allGuiasElements.forEach((guia, index) => {
+        const nrGuias = guia.querySelector('ptu\\:nr_Guias, nr_Guias');
+        const numeroGuia = nrGuias?.querySelector('ptu\\:nr_GuiaTissPrestador, nr_GuiaTissPrestador')?.textContent || `Guia ${index + 1}`;
+        
+        const currentValue = getFieldValue(guia, field);
+        let shouldModify = false;
+        let finalValue = newValue;
+
+        switch (opType) {
+            case 'replace':
+                shouldModify = currentValue === oldValue || (!oldValue && currentValue);
+                break;
+            case 'replaceAll':
+                shouldModify = true;
+                break;
+            case 'replaceEmpty':
+                shouldModify = !currentValue || currentValue.trim() === '';
+                break;
+            case 'addPrefix':
+                shouldModify = currentValue && currentValue.trim() !== '';
+                finalValue = newValue + currentValue;
+                break;
+            case 'addSuffix':
+                shouldModify = currentValue && currentValue.trim() !== '';
+                finalValue = currentValue + newValue;
+                break;
         }
 
+        if (shouldModify) {
+            bulkEditResults.push({
+                guiaIndex: index,
+                numeroGuia,
+                field,
+                oldValue: currentValue || '(vazio)',
+                newValue: finalValue
+            });
+
+            if (!previewOnly) {
+                console.log(`\n[${index + 1}/${allGuiasElements.length}] Processando guia ${numeroGuia}`);
+                const success = setFieldValue(guia, field, finalValue);
+                if (success) {
+                    successCount++;
+                    console.log(`  ✓ Sucesso`);
+                } else {
+                    failCount++;
+                    console.log(`  ✗ Falha`);
+                }
+            }
+        }
+    });
+
+    console.log(`=== RESULTADO ===`);
+    console.log(`Guias identificadas para modificação: ${bulkEditResults.length}`);
+    console.log(`Modificações bem-sucedidas: ${successCount}`);
+    console.log(`Falhas: ${failCount}`);
+
+    if (previewOnly) {
+        showBulkPreview();
+    } else {
+        if (successCount > 0) {
+            showNotification(`✅ ${successCount} guia(s) modificadas com sucesso!${failCount > 0 ? ` (${failCount} falhas)` : ''}`, 'success');
+            closeModal('modalBulkEdit');
+            processXML(); // Reprocessa para atualizar
+        } else {
+            showNotification('❌ Nenhuma guia foi modificada. Verifique os critérios.', 'error');
+        }
+    }
+}
+
+function showBulkPreview() {
+    const previewDiv = document.getElementById('bulkPreviewResults');
+    const contentDiv = document.getElementById('bulkPreviewContent');
+
+    if (bulkEditResults.length === 0) {
+        contentDiv.innerHTML = '<p style="text-align: center; color: #999;">Nenhuma alteração será feita com os critérios atuais.</p>';
+        previewDiv.classList.remove('hidden');
+        document.getElementById('bulkApplyBtn').disabled = true;
+        return;
+    }
+
+    let html = `
+        <div class="alert-box alert-info" style="margin-bottom: 15px;">
+            <strong>📊 Total de alterações: ${bulkEditResults.length} guia(s)</strong>
+        </div>
+        <table style="width: 100%; font-size: 12px;">
+            <thead>
+                <tr style="background: var(--primary); color: white;">
+                    <th style="padding: 8px;">Nº Guia</th>
+                    <th style="padding: 8px;">Valor Atual</th>
+                    <th style="padding: 8px;">➡️</th>
+                    <th style="padding: 8px;">Novo Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    bulkEditResults.slice(0, 50).forEach(result => {
+        html += `
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 8px;"><strong>${result.numeroGuia}</strong></td>
+                <td style="padding: 8px; color: var(--danger);">${result.oldValue}</td>
+                <td style="padding: 8px; text-align: center;">➡️</td>
+                <td style="padding: 8px; color: var(--success);"><strong>${result.newValue}</strong></td>
+            </tr>
+        `;
+    });
+
+    if (bulkEditResults.length > 50) {
+        html += `
+            <tr>
+                <td colspan="4" style="padding: 15px; text-align: center; color: #666; font-style: italic;">
+                    ... e mais ${bulkEditResults.length - 50} guia(s)
+                </td>
+            </tr>
+        `;
+    }
+
+    html += '</tbody></table>';
+    contentDiv.innerHTML = html;
+    previewDiv.classList.remove('hidden');
+    document.getElementById('bulkApplyBtn').disabled = false;
+}
         // ========================================
         // UTILITÁRIOS
         // ========================================
